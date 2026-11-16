@@ -1,0 +1,431 @@
+package com.harmonia.music.ui.components
+
+import androidx.compose.animation.core.RepeatMode as AnimRepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Repeat
+import androidx.compose.material.icons.filled.RepeatOne
+import androidx.compose.material.icons.filled.Shuffle
+import androidx.compose.material.icons.filled.SkipNext
+import androidx.compose.material.icons.filled.SkipPrevious
+import androidx.compose.material.icons.outlined.FavoriteBorder
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledIconButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
+import com.harmonia.music.R
+import com.harmonia.music.model.PlaybackState
+import com.harmonia.music.model.RepeatMode
+import com.harmonia.music.ui.theme.AccentCyan
+import com.harmonia.music.ui.theme.AccentPink
+import com.harmonia.music.ui.theme.AccentPurple
+import com.harmonia.music.ui.theme.DarkBackground
+import com.harmonia.music.ui.theme.DarkSurfaceElevated
+import com.harmonia.music.ui.theme.DarkSurfaceVariant
+import com.harmonia.music.ui.theme.ErrorRed
+import com.harmonia.music.ui.theme.TextPrimary
+import com.harmonia.music.ui.theme.TextSecondary
+import com.harmonia.music.ui.theme.TextTertiary
+import java.util.Locale
+import java.util.concurrent.TimeUnit
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun FullPlayerSheet(
+    playbackState: PlaybackState,
+    onDismiss: () -> Unit,
+    onPlayPauseClick: () -> Unit,
+    onSeek: (Long) -> Unit,
+    onSkipNext: () -> Unit,
+    onSkipPrevious: () -> Unit,
+    onToggleShuffle: () -> Unit,
+    onCycleRepeat: () -> Unit,
+    onToggleFavorite: () -> Unit
+) {
+    val track = playbackState.currentTrack ?: return
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val context = LocalContext.current
+
+    // Pulsing live badge animation
+    val infiniteTransition = rememberInfiniteTransition(label = "sheet_pulse")
+    val pulseAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.3f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(800),
+            repeatMode = AnimRepeatMode.Reverse
+        ),
+        label = "sheet_pulse_alpha"
+    )
+
+    // User dragging the slider
+    var isDraggingSlider by remember { mutableStateOf(false) }
+    var sliderDragPosition by remember { mutableFloatStateOf(0f) }
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        containerColor = DarkBackground,
+        dragHandle = null
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 24.dp, vertical = 16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            // Header Bar
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                IconButton(onClick = onDismiss) {
+                    Icon(
+                        imageVector = Icons.Default.KeyboardArrowDown,
+                        contentDescription = "Collapse",
+                        tint = TextPrimary,
+                        modifier = Modifier.size(32.dp)
+                    )
+                }
+
+                Text(
+                    text = if (track.isStream) "LIVE BROADCAST" else "PLAYING FROM QUEUE",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = AccentCyan,
+                    letterSpacing = 1.5.sp,
+                    fontWeight = FontWeight.Bold
+                )
+
+                IconButton(onClick = onToggleFavorite) {
+                    Icon(
+                        imageVector = if (track.isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                        contentDescription = "Favorite",
+                        tint = if (track.isFavorite) AccentPink else TextSecondary,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Large Artwork with Glow
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(0.85f)
+                    .aspectRatio(1f)
+                    .shadow(elevation = 20.dp, shape = RoundedCornerShape(28.dp), spotColor = AccentCyan)
+                    .clip(RoundedCornerShape(28.dp))
+                    .background(DarkSurfaceVariant)
+                    .border(
+                        width = 1.5.dp,
+                        brush = Brush.verticalGradient(listOf(AccentCyan, AccentPurple)),
+                        shape = RoundedCornerShape(28.dp)
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                AsyncImage(
+                    model = ImageRequest.Builder(context)
+                        .data(track.artworkUri)
+                        .crossfade(true)
+                        .error(R.drawable.default_artwork)
+                        .placeholder(R.drawable.default_artwork)
+                        .build(),
+                    contentDescription = track.title,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.matchParentSize()
+                )
+            }
+
+            Spacer(modifier = Modifier.height(28.dp))
+
+            // Track Title & Artist
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                if (track.isStream) {
+                    // Pulsing LIVE tag
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(ErrorRed.copy(alpha = 0.2f))
+                            .padding(horizontal = 10.dp, vertical = 4.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(8.dp)
+                                .alpha(if (playbackState.isPlaying) pulseAlpha else 1f)
+                                .clip(CircleShape)
+                                .background(ErrorRed)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "LIVE STREAM",
+                            color = ErrorRed,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(10.dp))
+                }
+
+                Text(
+                    text = track.title,
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = TextPrimary,
+                    textAlign = TextAlign.Center,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                Text(
+                    text = "${track.artist}${if (track.album.isNotBlank()) " • ${track.album}" else ""}",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = TextSecondary,
+                    textAlign = TextAlign.Center,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Progress Slider
+            if (!track.isStream) {
+                val currentPos = if (isDraggingSlider) {
+                    (sliderDragPosition * playbackState.durationMs).toLong()
+                } else {
+                    playbackState.currentPositionMs
+                }
+
+                val currentFraction = if (playbackState.durationMs > 0) {
+                    if (isDraggingSlider) sliderDragPosition else playbackState.progressFraction
+                } else 0f
+
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Slider(
+                        value = currentFraction,
+                        onValueChange = { fraction ->
+                            isDraggingSlider = true
+                            sliderDragPosition = fraction
+                        },
+                        onValueChangeFinished = {
+                            val targetMs = (sliderDragPosition * playbackState.durationMs).toLong()
+                            onSeek(targetMs)
+                            isDraggingSlider = false
+                        },
+                        colors = SliderDefaults.colors(
+                            thumbColor = AccentCyan,
+                            activeTrackColor = AccentCyan,
+                            inactiveTrackColor = DarkSurfaceElevated
+                        ),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = formatTime(currentPos),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = TextSecondary
+                        )
+                        Text(
+                            text = formatTime(playbackState.durationMs),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = TextSecondary
+                        )
+                    }
+                }
+            } else {
+                // For Live Streams, show audio frequency or station info bar
+                Surface(
+                    color = DarkSurfaceElevated,
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp)
+                ) {
+                    Text(
+                        text = "Continuous Live Broadcast • ${track.streamGenre ?: "Online Radio"}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = AccentCyan,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(vertical = 10.dp, horizontal = 16.dp)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // Main Playback Controls
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                // Shuffle
+                IconButton(
+                    onClick = onToggleShuffle,
+                    enabled = !track.isStream
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Shuffle,
+                        contentDescription = "Shuffle",
+                        tint = if (playbackState.shuffleEnabled) AccentCyan else TextTertiary,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+
+                // Previous
+                IconButton(
+                    onClick = onSkipPrevious,
+                    enabled = !track.isStream,
+                    modifier = Modifier.size(48.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.SkipPrevious,
+                        contentDescription = "Previous Track",
+                        tint = if (!track.isStream) TextPrimary else TextTertiary,
+                        modifier = Modifier.size(36.dp)
+                    )
+                }
+
+                // Play / Pause FAB
+                FilledIconButton(
+                    onClick = onPlayPauseClick,
+                    shape = CircleShape,
+                    colors = IconButtonDefaults.filledIconButtonColors(
+                        containerColor = AccentCyan,
+                        contentColor = DarkBackground
+                    ),
+                    modifier = Modifier
+                        .size(72.dp)
+                        .shadow(12.dp, CircleShape, spotColor = AccentCyan)
+                ) {
+                    if (playbackState.isBuffering) {
+                        CircularProgressIndicator(
+                            color = DarkBackground,
+                            strokeWidth = 3.dp,
+                            modifier = Modifier.size(32.dp)
+                        )
+                    } else {
+                        Icon(
+                            imageVector = if (playbackState.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                            contentDescription = if (playbackState.isPlaying) "Pause" else "Play",
+                            modifier = Modifier.size(40.dp)
+                        )
+                    }
+                }
+
+                // Next
+                IconButton(
+                    onClick = onSkipNext,
+                    enabled = !track.isStream,
+                    modifier = Modifier.size(48.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.SkipNext,
+                        contentDescription = "Next Track",
+                        tint = if (!track.isStream) TextPrimary else TextTertiary,
+                        modifier = Modifier.size(36.dp)
+                    )
+                }
+
+                // Repeat Mode
+                IconButton(
+                    onClick = onCycleRepeat,
+                    enabled = !track.isStream
+                ) {
+                    val icon = when (playbackState.repeatMode) {
+                        RepeatMode.ONE -> Icons.Default.RepeatOne
+                        else -> Icons.Default.Repeat
+                    }
+                    val tint = when (playbackState.repeatMode) {
+                        RepeatMode.OFF -> TextTertiary
+                        else -> AccentCyan
+                    }
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = "Repeat Mode",
+                        tint = tint,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+        }
+    }
+}
+
+private fun formatTime(millis: Long): String {
+    if (millis <= 0) return "0:00"
+    val minutes = TimeUnit.MILLISECONDS.toMinutes(millis)
+    val seconds = TimeUnit.MILLISECONDS.toSeconds(millis) % 60
+    return String.format(Locale.getDefault(), "%d:%02d", minutes, seconds)
+}

@@ -1,0 +1,30 @@
+<resources>
+    <string name="app_name">Harmonia</string>
+    <string name="tab_local">Local Music</string>
+    <string name="tab_streams">Live Streams</string>
+    <string name="tab_favorites">Favorites</string>
+
+    <string name="search_placeholder">Search songs, artists, albums…</string>
+    <string name="search_streams_placeholder">Search radio stations, genres…</string>
+
+    <string name="no_tracks_found">No music files found</string>
+    <string name="permission_required_title">Audio Storage Permission Needed</string>
+    <string name="permission_required_desc">Harmonia needs access to your audio library to scan and play your favorite songs.</string>
+    <string name="grant_permission">Grant Permission</string>
+
+    <string name="shuffle_all">Shuffle All</string>
+    <string name="play_all">Play All</string>
+    <string name="tracks_count">%1$d tracks</string>
+
+    <string name="add_stream">Add Stream</string>
+    <string name="stream_name">Station Name</string>
+    <string name="stream_url">Stream URL (http:// or https://)</string>
+    <string name="stream_genre">Genre / Category</string>
+    <string name="cancel">Cancel</string>
+    <string name="save">Save</string>
+
+    <string name="live_stream">LIVE STREAM</string>
+    <string name="unknown_artist">Unknown Artist</string>
+    <string name="unknown_title">Unknown Title</string>
+    <string name="unknown_album">Unknown Album</string>
+</resources>
