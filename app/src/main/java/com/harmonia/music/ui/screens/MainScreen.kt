@@ -1,21 +1,40 @@
 package com.harmonia.music.ui.screens
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.Radio
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -23,9 +42,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -37,6 +58,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -47,6 +70,8 @@ import com.harmonia.music.ui.theme.AccentCyan
 import com.harmonia.music.ui.theme.AccentPurple
 import com.harmonia.music.ui.theme.DarkBackground
 import com.harmonia.music.ui.theme.DarkSurfaceElevated
+import com.harmonia.music.ui.theme.DarkSurfaceVariant
+import com.harmonia.music.ui.theme.SuccessGreen
 import com.harmonia.music.ui.theme.TextPrimary
 import com.harmonia.music.ui.theme.TextSecondary
 import com.harmonia.music.ui.viewmodel.MainViewModel
@@ -68,6 +93,8 @@ fun MainScreen(
     val playbackState by viewModel.playbackState.collectAsState()
 
     var isPlayerExpanded by remember { mutableStateOf(false) }
+    var showAboutDialog by remember { mutableStateOf(false) }
+    val context = LocalContext.current
 
     Scaffold(
         containerColor = DarkBackground,
@@ -79,12 +106,38 @@ fun MainScreen(
             ) {
                 TopAppBar(
                     title = {
-                        Text(
-                            text = "Harmonia",
-                            style = MaterialTheme.typography.headlineMedium,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = AccentCyan
-                        )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = "Harmonia",
+                                style = MaterialTheme.typography.headlineMedium,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = AccentCyan
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            // 120 FPS high refresh badge
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(6.dp))
+                                    .background(SuccessGreen.copy(alpha = 0.18f))
+                                    .padding(horizontal = 6.dp, vertical = 2.dp)
+                            ) {
+                                Text(
+                                    text = "120 FPS",
+                                    color = SuccessGreen,
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                    },
+                    actions = {
+                        IconButton(onClick = { showAboutDialog = true }) {
+                            Icon(
+                                imageVector = Icons.Default.Info,
+                                contentDescription = "About Developer",
+                                tint = TextSecondary
+                            )
+                        }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
                         containerColor = DarkBackground,
@@ -138,11 +191,23 @@ fun MainScreen(
         },
         bottomBar = {
             Column {
-                // Docked Mini Player
+                // Docked Mini Player with Fluid Spring Physics
                 AnimatedVisibility(
                     visible = playbackState.currentTrack != null,
-                    enter = slideInVertically(initialOffsetY = { it }),
-                    exit = slideOutVertically(targetOffsetY = { it })
+                    enter = slideInVertically(
+                        animationSpec = spring(
+                            dampingRatio = Spring.DampingRatioMediumBouncy,
+                            stiffness = Spring.StiffnessMediumLow
+                        ),
+                        initialOffsetY = { it }
+                    ) + fadeIn(animationSpec = tween(200)),
+                    exit = slideOutVertically(
+                        animationSpec = spring(
+                            dampingRatio = Spring.DampingRatioNoBouncy,
+                            stiffness = Spring.StiffnessMedium
+                        ),
+                        targetOffsetY = { it }
+                    ) + fadeOut(animationSpec = tween(150))
                 ) {
                     MiniPlayer(
                         playbackState = playbackState,
@@ -152,7 +217,7 @@ fun MainScreen(
                     )
                 }
 
-                // Bottom Navigation
+                // Bottom Navigation Bar
                 NavigationBar(
                     containerColor = DarkBackground,
                     tonalElevation = 8.dp
@@ -256,6 +321,98 @@ fun MainScreen(
             onCycleRepeat = { viewModel.playerController.cycleRepeatMode() },
             onToggleFavorite = {
                 playbackState.currentTrack?.let { viewModel.toggleFavorite(it) }
+            }
+        )
+    }
+
+    // About & Developer Credits Dialog
+    if (showAboutDialog) {
+        AlertDialog(
+            onDismissRequest = { showAboutDialog = false },
+            containerColor = DarkSurfaceVariant,
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clip(CircleShape)
+                            .background(AccentCyan.copy(alpha = 0.2f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Code,
+                            contentDescription = null,
+                            tint = AccentCyan,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Text(text = "About Harmonia", color = TextPrimary)
+                }
+            },
+            text = {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Text(
+                        text = "Harmonia Music Player v1.0.0",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = TextPrimary
+                    )
+                    Text(
+                        text = "Built with Jetpack Compose, Material 3, and Media3 ExoPlayer with 120 FPS high refresh rate rendering.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = TextSecondary
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Surface(
+                        color = DarkSurfaceElevated,
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            Text(
+                                text = "Lead Developer:",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = AccentCyan
+                            )
+                            Text(
+                                text = "rmdmahfuz727-sudo",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = TextPrimary
+                            )
+                            Text(
+                                text = "https://github.com/rmdmahfuz727-sudo",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = TextSecondary
+                            )
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val browserIntent = Intent(
+                            Intent.ACTION_VIEW,
+                            Uri.parse("https://github.com/rmdmahfuz727-sudo")
+                        )
+                        context.startActivity(browserIntent)
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = AccentCyan,
+                        contentColor = DarkBackground
+                    )
+                ) {
+                    Text("Visit GitHub Profile", fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                OutlinedButton(onClick = { showAboutDialog = false }) {
+                    Text("Close", color = TextSecondary)
+                }
             }
         )
     }

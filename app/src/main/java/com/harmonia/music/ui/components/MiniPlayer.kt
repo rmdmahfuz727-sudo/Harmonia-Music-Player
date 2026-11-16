@@ -2,13 +2,18 @@ package com.harmonia.music.ui.components
 
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -33,10 +38,11 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
@@ -62,24 +68,43 @@ fun MiniPlayer(
     val track = playbackState.currentTrack ?: return
     val context = LocalContext.current
 
-    // Rotation animation for spinning vinyl record
+    // 120 FPS continuous rotation for vinyl disc using graphicsLayer
     val infiniteTransition = rememberInfiniteTransition(label = "disc_spin")
     val rotation by infiniteTransition.animateFloat(
         initialValue = 0f,
         targetValue = 360f,
         animationSpec = infiniteRepeatable(
-            animation = tween(12000, easing = LinearEasing),
+            animation = tween(10000, easing = LinearEasing),
             repeatMode = RepeatMode.Restart
         ),
         label = "rotation"
+    )
+
+    // Fluid spring bounce physics on touch press
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val pressScale by animateFloatAsState(
+        targetValue = if (isPressed) 0.965f else 1f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessLow
+        ),
+        label = "press_scale"
     )
 
     Surface(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 12.dp, vertical = 6.dp)
+            .graphicsLayer {
+                scaleX = pressScale
+                scaleY = pressScale
+            }
             .clip(RoundedCornerShape(18.dp))
-            .clickable { onExpandClick() }
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null
+            ) { onExpandClick() }
             .border(1.dp, AccentCyan.copy(alpha = 0.35f), RoundedCornerShape(18.dp)),
         color = DarkSurfaceElevated,
         shape = RoundedCornerShape(18.dp),
@@ -92,7 +117,7 @@ fun MiniPlayer(
                     .padding(horizontal = 12.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Vinyl disc thumbnail
+                // Vinyl disc thumbnail with 120 FPS graphicsLayer rotation
                 Box(
                     modifier = Modifier
                         .size(46.dp)
@@ -112,7 +137,9 @@ fun MiniPlayer(
                         contentScale = ContentScale.Crop,
                         modifier = Modifier
                             .matchParentSize()
-                            .rotate(if (playbackState.isPlaying) rotation else 0f)
+                            .graphicsLayer {
+                                rotationZ = if (playbackState.isPlaying) rotation else 0f
+                            }
                     )
 
                     // Small center hole for vinyl effect
@@ -147,7 +174,16 @@ fun MiniPlayer(
                     )
                 }
 
-                Spacer(modifier = Modifier.width(6.dp))
+                // Mini Fluid Visualizer (6 bars)
+                if (playbackState.isPlaying) {
+                    FluidVisualizer(
+                        isPlaying = true,
+                        barCount = 6,
+                        height = 20.dp,
+                        modifier = Modifier.width(36.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                }
 
                 // Play / Pause button
                 IconButton(
@@ -184,7 +220,7 @@ fun MiniPlayer(
                 }
             }
 
-            // Bottom progress bar
+            // Bottom progress bar with lambda-based progress to avoid recomposition
             if (!track.isStream && playbackState.durationMs > 0) {
                 LinearProgressIndicator(
                     progress = { playbackState.progressFraction },

@@ -1,8 +1,12 @@
 package com.harmonia.music.ui.components
 
-import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -14,19 +18,20 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
@@ -55,12 +60,31 @@ fun TrackItem(
         DarkSurfaceVariant.copy(alpha = 0.45f)
     }
 
+    // Fluid spring bounce physics on touch press
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val pressScale by animateFloatAsState(
+        targetValue = if (isPressed) 0.97f else 1f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMedium
+        ),
+        label = "item_press_scale"
+    )
+
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
+            .graphicsLayer {
+                scaleX = pressScale
+                scaleY = pressScale
+            }
+            .clip(RoundedCornerShape(14.dp))
             .background(itemBackground)
-            .clickable { onTrackClick() }
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null
+            ) { onTrackClick() }
             .padding(horizontal = 12.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -68,7 +92,7 @@ fun TrackItem(
         Box(
             modifier = Modifier
                 .size(50.dp)
-                .clip(RoundedCornerShape(8.dp))
+                .clip(RoundedCornerShape(10.dp))
                 .background(DarkSurfaceVariant),
             contentAlignment = Alignment.Center
         ) {
@@ -88,14 +112,14 @@ fun TrackItem(
                 Box(
                     modifier = Modifier
                         .matchParentSize()
-                        .background(AccentCyan.copy(alpha = 0.3f)),
+                        .background(AccentCyan.copy(alpha = 0.35f)),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.GraphicEq,
-                        contentDescription = "Playing",
-                        tint = AccentCyan,
-                        modifier = Modifier.size(24.dp)
+                    FluidVisualizer(
+                        isPlaying = true,
+                        barCount = 4,
+                        height = 20.dp,
+                        modifier = Modifier.width(28.dp)
                     )
                 }
             }

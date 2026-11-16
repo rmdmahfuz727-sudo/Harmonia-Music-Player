@@ -1,12 +1,17 @@
 package com.harmonia.music.ui.components
 
 import androidx.compose.animation.core.RepeatMode as AnimRepeatMode
+import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -55,11 +60,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -102,16 +106,38 @@ fun FullPlayerSheet(
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val context = LocalContext.current
 
-    // Pulsing live badge animation
+    // Pulsing live badge animation running in graphicsLayer
     val infiniteTransition = rememberInfiniteTransition(label = "sheet_pulse")
     val pulseAlpha by infiniteTransition.animateFloat(
-        initialValue = 0.3f,
+        initialValue = 0.35f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween(800),
+            animation = tween(750),
             repeatMode = AnimRepeatMode.Reverse
         ),
         label = "sheet_pulse_alpha"
+    )
+
+    // Fluid spring physics for album artwork breathing
+    val artworkScale by animateFloatAsState(
+        targetValue = if (playbackState.isPlaying) 1f else 0.92f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessLow
+        ),
+        label = "artwork_scale"
+    )
+
+    // Fluid spring physics for play FAB press
+    val playFabInteractionSource = remember { MutableInteractionSource() }
+    val isPlayFabPressed by playFabInteractionSource.collectIsPressedAsState()
+    val playFabScale by animateFloatAsState(
+        targetValue = if (isPlayFabPressed) 0.88f else 1f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMedium
+        ),
+        label = "fab_scale"
     )
 
     // User dragging the slider
@@ -135,7 +161,7 @@ fun FullPlayerSheet(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 16.dp),
+                    .padding(bottom = 12.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
@@ -166,14 +192,18 @@ fun FullPlayerSheet(
                 }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(4.dp))
 
-            // Large Artwork with Glow
+            // Large Artwork with Fluid Spring Breathing & 120 FPS graphicsLayer
             Box(
                 modifier = Modifier
                     .fillMaxWidth(0.85f)
                     .aspectRatio(1f)
-                    .shadow(elevation = 20.dp, shape = RoundedCornerShape(28.dp), spotColor = AccentCyan)
+                    .graphicsLayer {
+                        scaleX = artworkScale
+                        scaleY = artworkScale
+                    }
+                    .shadow(elevation = 24.dp, shape = RoundedCornerShape(28.dp), spotColor = AccentCyan)
                     .clip(RoundedCornerShape(28.dp))
                     .background(DarkSurfaceVariant)
                     .border(
@@ -196,7 +226,7 @@ fun FullPlayerSheet(
                 )
             }
 
-            Spacer(modifier = Modifier.height(28.dp))
+            Spacer(modifier = Modifier.height(22.dp))
 
             // Track Title & Artist
             Column(
@@ -204,7 +234,7 @@ fun FullPlayerSheet(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 if (track.isStream) {
-                    // Pulsing LIVE tag
+                    // Pulsing LIVE tag running in graphicsLayer
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier
@@ -215,7 +245,9 @@ fun FullPlayerSheet(
                         Box(
                             modifier = Modifier
                                 .size(8.dp)
-                                .alpha(if (playbackState.isPlaying) pulseAlpha else 1f)
+                                .graphicsLayer {
+                                    alpha = if (playbackState.isPlaying) pulseAlpha else 1f
+                                }
                                 .clip(CircleShape)
                                 .background(ErrorRed)
                         )
@@ -239,7 +271,7 @@ fun FullPlayerSheet(
                     overflow = TextOverflow.Ellipsis
                 )
 
-                Spacer(modifier = Modifier.height(6.dp))
+                Spacer(modifier = Modifier.height(4.dp))
 
                 Text(
                     text = "${track.artist}${if (track.album.isNotBlank()) " • ${track.album}" else ""}",
@@ -251,7 +283,19 @@ fun FullPlayerSheet(
                 )
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // 120 FPS Fluid Canvas Visualizer (28 animated bars)
+            FluidVisualizer(
+                isPlaying = playbackState.isPlaying,
+                barCount = 28,
+                height = 36.dp,
+                modifier = Modifier
+                    .fillMaxWidth(0.92f)
+                    .padding(vertical = 4.dp)
+            )
+
+            Spacer(modifier = Modifier.height(14.dp))
 
             // Progress Slider
             if (!track.isStream) {
@@ -302,7 +346,6 @@ fun FullPlayerSheet(
                     }
                 }
             } else {
-                // For Live Streams, show audio frequency or station info bar
                 Surface(
                     color = DarkSurfaceElevated,
                     shape = RoundedCornerShape(12.dp),
@@ -320,9 +363,9 @@ fun FullPlayerSheet(
                 }
             }
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-            // Main Playback Controls
+            // Main Playback Controls with Spring Physics
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -355,9 +398,10 @@ fun FullPlayerSheet(
                     )
                 }
 
-                // Play / Pause FAB
+                // Play / Pause FAB with Spring Bounce Physics
                 FilledIconButton(
                     onClick = onPlayPauseClick,
+                    interactionSource = playFabInteractionSource,
                     shape = CircleShape,
                     colors = IconButtonDefaults.filledIconButtonColors(
                         containerColor = AccentCyan,
@@ -365,7 +409,11 @@ fun FullPlayerSheet(
                     ),
                     modifier = Modifier
                         .size(72.dp)
-                        .shadow(12.dp, CircleShape, spotColor = AccentCyan)
+                        .graphicsLayer {
+                            scaleX = playFabScale
+                            scaleY = playFabScale
+                        }
+                        .shadow(14.dp, CircleShape, spotColor = AccentCyan)
                 ) {
                     if (playbackState.isBuffering) {
                         CircularProgressIndicator(

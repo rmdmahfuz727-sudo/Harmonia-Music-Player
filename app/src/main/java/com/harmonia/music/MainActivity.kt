@@ -25,6 +25,9 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        // Enable 120 FPS / High Refresh Rate on supported displays
+        enableHighRefreshRate()
+
         // Check initial permission state
         checkAudioPermission()
 
@@ -76,5 +79,30 @@ class MainActivity : ComponentActivity() {
         ) == PackageManager.PERMISSION_GRANTED
 
         viewModel.onAudioPermissionResult(isGranted)
+    }
+
+    private fun enableHighRefreshRate() {
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                val modes = display?.supportedModes ?: emptyArray()
+                val highRateMode = modes.filter { it.refreshRate >= 89.0f }.maxByOrNull { it.refreshRate }
+                if (highRateMode != null) {
+                    val params = window.attributes
+                    params.preferredDisplayModeId = highRateMode.modeId
+                    window.attributes = params
+                }
+            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                @Suppress("DEPRECATION")
+                val modes = windowManager.defaultDisplay?.supportedModes ?: emptyArray()
+                val highRateMode = modes.filter { it.refreshRate >= 89.0f }.maxByOrNull { it.refreshRate }
+                if (highRateMode != null) {
+                    val params = window.attributes
+                    params.preferredDisplayModeId = highRateMode.modeId
+                    window.attributes = params
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 }

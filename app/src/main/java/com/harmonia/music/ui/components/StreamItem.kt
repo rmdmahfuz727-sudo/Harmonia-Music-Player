@@ -1,13 +1,18 @@
 package com.harmonia.music.ui.components
 
 import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -35,10 +40,11 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -70,20 +76,39 @@ fun StreamItem(
     val context = LocalContext.current
     val infiniteTransition = rememberInfiniteTransition(label = "pulse")
     val pulseAlpha by infiniteTransition.animateFloat(
-        initialValue = 0.4f,
+        initialValue = 0.35f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween(800),
+            animation = tween(750),
             repeatMode = RepeatMode.Reverse
         ),
         label = "pulse_alpha"
     )
 
+    // Fluid spring bounce on touch
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val pressScale by animateFloatAsState(
+        targetValue = if (isPressed) 0.97f else 1f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMedium
+        ),
+        label = "stream_press_scale"
+    )
+
     Surface(
         modifier = modifier
             .fillMaxWidth()
+            .graphicsLayer {
+                scaleX = pressScale
+                scaleY = pressScale
+            }
             .clip(RoundedCornerShape(16.dp))
-            .clickable { onStreamClick() }
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null
+            ) { onStreamClick() }
             .then(
                 if (isCurrentTrack) {
                     Modifier.border(1.5.dp, AccentCyan, RoundedCornerShape(16.dp))
@@ -128,6 +153,22 @@ fun StreamItem(
                         modifier = Modifier.size(28.dp)
                     )
                 }
+
+                if (isCurrentTrack && isPlaying) {
+                    Box(
+                        modifier = Modifier
+                            .matchParentSize()
+                            .background(DarkSurfaceElevated.copy(alpha = 0.65f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        FluidVisualizer(
+                            isPlaying = true,
+                            barCount = 4,
+                            height = 24.dp,
+                            modifier = Modifier.width(30.dp)
+                        )
+                    }
+                }
             }
 
             Spacer(modifier = Modifier.width(14.dp))
@@ -140,7 +181,7 @@ fun StreamItem(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    // Glowing LIVE badge
+                    // Pulsing LIVE badge in graphicsLayer
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(4.dp))
@@ -152,7 +193,9 @@ fun StreamItem(
                             Box(
                                 modifier = Modifier
                                     .size(6.dp)
-                                    .alpha(if (isCurrentTrack && isPlaying) pulseAlpha else 1f)
+                                    .graphicsLayer {
+                                        alpha = if (isCurrentTrack && isPlaying) pulseAlpha else 1f
+                                    }
                                     .clip(CircleShape)
                                     .background(ErrorRed)
                             )
