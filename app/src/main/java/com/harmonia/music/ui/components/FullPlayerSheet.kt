@@ -1,14 +1,15 @@
 package com.harmonia.music.ui.components
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -25,7 +26,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Bluetooth
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.MoreVert
@@ -54,6 +54,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -68,6 +70,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -105,11 +108,13 @@ fun FullPlayerSheet(
     val context = LocalContext.current
     val vfxState = remember { SakugaVfxState() }
 
-    // Mochy interactive pill states
+    // Mochy interactive states
     var isDisliked by remember { mutableStateOf(false) }
     var isHapticsEnabled by remember { mutableStateOf(true) }
-    var isLyricsOpen by remember { mutableStateOf(false) }
+    var isSpatialActive by remember { mutableStateOf(true) }
+    var selectedBottomPage by remember { mutableIntStateOf(0) } // 0 = standard, 1 = lyrics, 2 = queue
     var showMenu by remember { mutableStateOf(false) }
+    var systemVolume by remember { mutableFloatStateOf(0.72f) }
 
     // Fluid spring physics for artwork breathing
     val artworkScale by animateFloatAsState(
@@ -121,7 +126,7 @@ fun FullPlayerSheet(
         label = "artwork_scale"
     )
 
-    // Background gradient inspired by Mochy-Music ambient cover lighting
+    // Ambient background gradient inspired by Mochy-Music cover lighting
     val backdropBrush = Brush.verticalGradient(
         colors = listOf(
             MochyBackdropTop,
@@ -145,18 +150,21 @@ fun FullPlayerSheet(
                 modifier = Modifier
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 24.dp, vertical = 14.dp),
+                    .padding(horizontal = 22.dp, vertical = 12.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 // 1. Top Header: Down Arrow | NOW PLAYING | Overflow Menu
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(bottom = 8.dp),
+                        .padding(bottom = 6.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    IconButton(onClick = onDismiss) {
+                    IconButton(
+                        onClick = onDismiss,
+                        modifier = Modifier.sakugaSquash(squashAmount = 0.85f) { onDismiss() }
+                    ) {
                         Icon(
                             imageVector = Icons.Default.KeyboardArrowDown,
                             contentDescription = "Collapse",
@@ -168,7 +176,7 @@ fun FullPlayerSheet(
                     Text(
                         text = "NOW PLAYING",
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
+                        fontWeight = FontWeight.ExtraBold,
                         color = Color.White.copy(alpha = 0.9f),
                         letterSpacing = 2.sp
                     )
@@ -213,7 +221,7 @@ fun FullPlayerSheet(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(6.dp))
+                Spacer(modifier = Modifier.height(4.dp))
 
                 // 2. Mochy Squircle Artwork Card
                 Box(
@@ -245,9 +253,49 @@ fun FullPlayerSheet(
                         contentScale = ContentScale.Crop,
                         modifier = Modifier.matchParentSize()
                     )
+
+                    // Lyrics Overlay Page
+                    AnimatedVisibility(
+                        visible = selectedBottomPage == 1,
+                        enter = fadeIn(),
+                        exit = fadeOut(),
+                        modifier = Modifier.matchParentSize()
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .matchParentSize()
+                                .background(Color.Black.copy(alpha = 0.82f))
+                                .padding(20.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                Text(
+                                    text = "♪ ♫ ♩",
+                                    color = MochyCoral,
+                                    fontSize = 24.sp
+                                )
+                                Text(
+                                    text = track.title,
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 18.sp,
+                                    textAlign = TextAlign.Center
+                                )
+                                Text(
+                                    text = "Lyrics synchronized via Mochy Media Engine\nEnjoy the high-fidelity soundstage",
+                                    color = Color.White.copy(alpha = 0.7f),
+                                    fontSize = 13.sp,
+                                    textAlign = TextAlign.Center
+                                )
+                            }
+                        }
+                    }
                 }
 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(20.dp))
 
                 // 3. Track Title & Artist (Left Aligned as in Mochy)
                 Column(
@@ -276,9 +324,9 @@ fun FullPlayerSheet(
                     )
                 }
 
-                Spacer(modifier = Modifier.height(18.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
-                // 4. Mochy Action Pills Row with Sakuga Anime Reactions
+                // 4. Mochy Action Pills Row
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -300,7 +348,6 @@ fun FullPlayerSheet(
                                     .sakugaSquash(squashAmount = 0.85f) {
                                         onToggleFavorite()
                                         if (isDisliked) isDisliked = false
-                                        // Sakuga Anime Kira & Pop
                                         vfxState.triggerKira(Offset(120f, 400f), color = SakugaGold)
                                         vfxState.triggerMangaSfx("ポン!", Offset(120f, 380f), color = MochyCoralLight)
                                     },
@@ -346,7 +393,7 @@ fun FullPlayerSheet(
                         }
                     }
 
-                    // Music Haptics Pill with Sakuga Click
+                    // Music Haptics Pill
                     Surface(
                         color = if (isHapticsEnabled) MochyPillBackground else MochyPillBackground.copy(alpha = 0.4f),
                         shape = RoundedCornerShape(22.dp),
@@ -375,40 +422,12 @@ fun FullPlayerSheet(
                         }
                     }
 
-                    // Lyrics Pill with Sakuga Swish
-                    Surface(
-                        color = if (isLyricsOpen) MochyCoral.copy(alpha = 0.25f) else MochyPillBackground,
-                        shape = RoundedCornerShape(22.dp),
-                        modifier = Modifier.sakugaSquash(squashAmount = 0.88f) {
-                            isLyricsOpen = !isLyricsOpen
-                            vfxState.triggerMangaSfx("シュッ!", Offset(320f, 400f), color = MochyCoralLight)
-                        }
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Description,
-                                contentDescription = "Lyrics",
-                                tint = if (isLyricsOpen) MochyCoral else Color.White,
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = "Lyrics",
-                                color = Color.White,
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                        }
-                    }
-
                     // Spatial Audio Pill
                     Surface(
-                        color = MochyPillBackground,
+                        color = if (isSpatialActive) MochyPillBackground else MochyPillBackground.copy(alpha = 0.4f),
                         shape = RoundedCornerShape(22.dp),
                         modifier = Modifier.sakugaSquash(squashAmount = 0.88f) {
+                            isSpatialActive = !isSpatialActive
                             vfxState.triggerRing(Offset(380f, 400f), color = MochyCoral)
                         }
                     ) {
@@ -419,7 +438,7 @@ fun FullPlayerSheet(
                             Icon(
                                 imageVector = Icons.Default.SurroundSound,
                                 contentDescription = "Spatial Audio",
-                                tint = MochyCoral,
+                                tint = if (isSpatialActive) MochyCoral else Color.White.copy(alpha = 0.6f),
                                 modifier = Modifier.size(16.dp)
                             )
                             Spacer(modifier = Modifier.width(6.dp))
@@ -433,7 +452,7 @@ fun FullPlayerSheet(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(20.dp))
 
                 // 5. Mochy Signature Wavy Glowing Seek Bar
                 if (!track.isStream) {
@@ -486,7 +505,6 @@ fun FullPlayerSheet(
                         )
                     }
                 } else {
-                    // Live Stream Indicator Bar
                     Surface(
                         color = MochyPillBackground,
                         shape = RoundedCornerShape(14.dp),
@@ -509,15 +527,15 @@ fun FullPlayerSheet(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(28.dp))
+                Spacer(modifier = Modifier.height(24.dp))
 
-                // 6. Mochy Flagship Transport Cluster with Sakuga Anime Physics & VFX
+                // 6. Mochy Flagship Transport Cluster (Previous Capsule | Center Big Coral Pill | Next Capsule)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.Center
                 ) {
-                    // Previous Capsule with Sakuga Slash
+                    // Previous Capsule
                     Surface(
                         color = MochyPillBackground,
                         shape = RoundedCornerShape(28.dp),
@@ -543,7 +561,7 @@ fun FullPlayerSheet(
 
                     Spacer(modifier = Modifier.width(18.dp))
 
-                    // Center Iconic Mochy Coral Pill Play/Pause FAB with Sakuga Burst & Impact Sound
+                    // Center Iconic Mochy Coral Pill Play/Pause FAB
                     Surface(
                         color = MochyCoral,
                         shape = RoundedCornerShape(32.dp),
@@ -577,7 +595,7 @@ fun FullPlayerSheet(
 
                     Spacer(modifier = Modifier.width(18.dp))
 
-                    // Next Capsule with Sakuga Slash
+                    // Next Capsule
                     Surface(
                         color = MochyPillBackground,
                         shape = RoundedCornerShape(28.dp),
@@ -602,29 +620,35 @@ fun FullPlayerSheet(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(26.dp))
+                Spacer(modifier = Modifier.height(24.dp))
 
-                // 7. Bottom Audio Output Route: ᛒ CPH2745 • SpatialFX
+                // 7. Mochy Apple-Style Volume Bar with touch swelling
+                MochyAppleVolume(
+                    volume = systemVolume,
+                    onVolumeChange = { systemVolume = it },
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(modifier = Modifier.height(14.dp))
+
+                // 8. Mochy Bottom Bar: OutputPill & PagesPill
                 Row(
+                    modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Center
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Bluetooth,
-                        contentDescription = "Bluetooth Device",
-                        tint = MochySubtleText,
-                        modifier = Modifier.size(16.dp)
+                    MochyOutputPill(
+                        label = if (isSpatialActive) "CPH2745 • SpatialFX" else "Phone Speaker",
+                        onClick = { isSpatialActive = !isSpatialActive }
                     )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = "CPH2745 • SpatialFX",
-                        color = MochySubtleText,
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.SemiBold
+
+                    MochyPagesPill(
+                        selectedPage = selectedBottomPage,
+                        onSelectPage = { selectedBottomPage = it }
                     )
                 }
 
-                Spacer(modifier = Modifier.height(18.dp))
+                Spacer(modifier = Modifier.height(16.dp))
             }
 
             // Sakuga VFX Anime Overlay Rendering Layer
