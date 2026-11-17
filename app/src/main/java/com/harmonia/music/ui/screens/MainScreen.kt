@@ -77,6 +77,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.media3.common.util.UnstableApi
+import com.harmonia.music.model.PlaybackState
 import com.harmonia.music.model.Track
 import com.harmonia.music.ui.components.FullPlayerSheet
 import com.harmonia.music.ui.components.LocalSakugaVfx

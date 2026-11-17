@@ -1,11 +1,8 @@
 package com.harmonia.music.ui.components
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -255,12 +252,7 @@ fun FullPlayerSheet(
                     )
 
                     // Lyrics Overlay Page
-                    AnimatedVisibility(
-                        visible = selectedBottomPage == 1,
-                        enter = fadeIn(),
-                        exit = fadeOut(),
-                        modifier = Modifier.matchParentSize()
-                    ) {
+                    if (selectedBottomPage == 1) {
                         Box(
                             modifier = Modifier
                                 .matchParentSize()
