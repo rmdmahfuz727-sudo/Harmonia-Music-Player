@@ -25,15 +25,16 @@ class YouTubeMusicClient {
         private const val INNERTUBE_SEARCH_URL =
             "https://music.youtube.com/youtubei/v1/search?prettyPrint=false"
 
-        // Multiple Piped instances for redundancy
-        private val PIPED_INSTANCES = listOf(
+        // Redundant Invidious & Piped backend instances
+        private val STREAM_INSTANCES = listOf(
+            "https://yt.chocolatemoo53.com",
             "https://pipedapi.kavin.rocks",
             "https://api.piped.privacydev.net",
-            "https://pipedapi.adminforge.de"
+            "https://invidious.projectsegfau.lt"
         )
 
-        private const val CONNECT_TIMEOUT = 12_000
-        private const val READ_TIMEOUT = 15_000
+        private const val CONNECT_TIMEOUT = 10_000
+        private const val READ_TIMEOUT = 12_000
     }
 
     private fun buildInnerTubeContext(): JSONObject {
@@ -89,21 +90,39 @@ class YouTubeMusicClient {
 
     /**
      * Resolve a playable audio stream URL for the given [videoId]
-     * using Piped API instances with automatic failover.
+     * using Invidious and Piped instances with automatic failover.
      */
     suspend fun resolveStreamUrl(videoId: String): String? = withContext(Dispatchers.IO) {
-        for (instance in PIPED_INSTANCES) {
+        for (instance in STREAM_INSTANCES) {
             try {
-                val url = "$instance/streams/$videoId"
-                val responseText = httpGet(url)
+                // 1. Try Invidious API
+                val invidiousUrl = "$instance/api/v1/videos/$videoId"
+                val responseText = httpGet(invidiousUrl)
                 val json = JSONObject(responseText)
-                val audioStreams = json.optJSONArray("audioStreams")
-                if (audioStreams != null && audioStreams.length() > 0) {
-                    // Pick the highest bitrate audio stream
+                val formats = json.optJSONArray("adaptiveFormats")
+                if (formats != null && formats.length() > 0) {
                     var bestUrl: String? = null
                     var bestBitrate = 0
-                    for (i in 0 until audioStreams.length()) {
-                        val stream = audioStreams.getJSONObject(i)
+                    for (i in 0 until formats.length()) {
+                        val fmt = formats.getJSONObject(i)
+                        val type = fmt.optString("type", "")
+                        val url = fmt.optString("url", "")
+                        val bitrate = fmt.optInt("bitrate", 0)
+                        if (type.contains("audio") && url.isNotBlank() && bitrate > bestBitrate) {
+                            bestBitrate = bitrate
+                            bestUrl = url
+                        }
+                    }
+                    if (bestUrl != null) return@withContext bestUrl
+                }
+
+                // 2. Try Piped API
+                val pipedStreams = json.optJSONArray("audioStreams")
+                if (pipedStreams != null && pipedStreams.length() > 0) {
+                    var bestUrl: String? = null
+                    var bestBitrate = 0
+                    for (i in 0 until pipedStreams.length()) {
+                        val stream = pipedStreams.getJSONObject(i)
                         val bitrate = stream.optInt("bitrate", 0)
                         val streamUrl = stream.optString("url", "")
                         if (bitrate > bestBitrate && streamUrl.isNotEmpty()) {
@@ -114,8 +133,7 @@ class YouTubeMusicClient {
                     if (bestUrl != null) return@withContext bestUrl
                 }
             } catch (e: Exception) {
-                // Try next Piped instance
-                e.printStackTrace()
+                // Try next endpoint
             }
         }
         null

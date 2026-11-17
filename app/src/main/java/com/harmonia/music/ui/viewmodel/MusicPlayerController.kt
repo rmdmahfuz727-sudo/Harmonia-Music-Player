@@ -93,12 +93,14 @@ class MusicPlayerController(
                         it.copy(
                             currentTrack = track,
                             durationMs = if (duration > 0) duration else track.durationMs,
-                            queueIndex = index
+                            queueIndex = index,
+                            lyrics = null
                         )
                     }
+                    loadLyricsForTrack(track)
                 } else {
                     _playbackState.update {
-                        it.copy(currentTrack = null, currentPositionMs = 0L, durationMs = 0L)
+                        it.copy(currentTrack = null, currentPositionMs = 0L, durationMs = 0L, lyrics = null)
                     }
                 }
             }
@@ -296,6 +298,42 @@ class MusicPlayerController(
             else -> Player.REPEAT_MODE_OFF
         }
         controller.repeatMode = nextMode
+    }
+
+    fun playQueueAt(index: Int) {
+        val controller = mediaController ?: return
+        if (index in currentQueue.indices) {
+            controller.seekTo(index, 0L)
+            controller.play()
+        }
+    }
+
+    fun loadLyricsForTrack(track: Track) {
+        scope.launch {
+            _playbackState.update { it.copy(isLoadingLyrics = true) }
+            val lyrics = repository.fetchLyrics(track)
+            _playbackState.update { it.copy(lyrics = lyrics, isLoadingLyrics = false) }
+        }
+    }
+
+    fun setPlayerStyle(style: com.harmonia.music.model.PlayerStyle) {
+        _playbackState.update { it.copy(playerStyle = style) }
+    }
+
+    fun setPlaybackSpeed(speed: Float) {
+        mediaController?.setPlaybackSpeed(speed)
+        _playbackState.update { it.copy(playbackSpeed = speed) }
+    }
+
+    fun setSleepTimer(minutes: Int) {
+        _playbackState.update { it.copy(sleepTimerMinutes = minutes) }
+        if (minutes > 0) {
+            scope.launch {
+                delay(minutes * 60 * 1000L)
+                mediaController?.pause()
+                _playbackState.update { it.copy(sleepTimerMinutes = 0) }
+            }
+        }
     }
 
     fun release() {

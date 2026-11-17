@@ -21,16 +21,13 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Cast
 import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.Headphones
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Storage
-import androidx.compose.material.icons.filled.ViewModule
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -45,7 +42,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -60,13 +56,12 @@ import com.harmonia.music.ui.theme.TextSecondary
 
 /**
  * Mochy Profile & Settings Screen:
- * Matches media_1794913111836_23848b78.jpg, media_1794913111891_5bf8ada0.jpg, media_1794913111927_4c96ef28.jpg:
- *  - "Hey, Mahfuz Rahman!" header
- *  - Official Mahfuz Rahman ID Card (ID CARD OF Mahfuz Rahman, joined Nov 16, 2026)
+ *  - Mahfuz Rahman ID Card
  *  - Total listening time stats
- *  - Version & about app 8.4.2
- *  - meet da dev and contributors :3
- *  - Settings list with Audio Lab launcher
+ *  - Version & About App 8.4.2
+ *  - Developer profile link
+ *  - Functional Audio Lab launcher & Customization
+ *  (No dummy discord or non-functional placeholder options)
  */
 @Composable
 fun ProfileScreen(
@@ -157,7 +152,6 @@ fun ProfileScreen(
                     Spacer(modifier = Modifier.height(14.dp))
 
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        // Anime Avatar Circle
                         Box(
                             modifier = Modifier
                                 .size(64.dp)
@@ -215,14 +209,12 @@ fun ProfileScreen(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Row(verticalAlignment = Alignment.Bottom) {
-                            Text(
-                                text = "0h  0m",
-                                style = MaterialTheme.typography.headlineLarge,
-                                fontWeight = FontWeight.ExtraBold,
-                                color = TextPrimary
-                            )
-                        }
+                        Text(
+                            text = "0h  0m",
+                            style = MaterialTheme.typography.headlineLarge,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = TextPrimary
+                        )
 
                         Text(
                             text = "Total Listening\ntime",
@@ -293,73 +285,44 @@ fun ProfileScreen(
             }
         }
 
-        // ── Community Links ─────────────────────────────────────────────
+        // ── Developer Profile Link ──────────────────────────────────────
         item {
-            Column(
+            Surface(
+                color = Color(0xFF16161B),
+                shape = RoundedCornerShape(18.dp),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
+                    .padding(horizontal = 16.dp)
+                    .sakugaSquash(squashAmount = 0.94f) {
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/rmdmahfuz727-sudo"))
+                        context.startActivity(intent)
+                    }
             ) {
-                // Meet the developer
-                Surface(
-                    color = Color(0xFF16161B),
-                    shape = RoundedCornerShape(18.dp),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .sakugaSquash(squashAmount = 0.94f) {
-                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/rmdmahfuz727-sudo"))
-                            context.startActivity(intent)
-                        }
+                Row(
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                    Box(
+                        modifier = Modifier
+                            .size(32.dp)
+                            .clip(CircleShape)
+                            .background(MochyCoral.copy(alpha = 0.2f)),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .size(32.dp)
-                                .clip(CircleShape)
-                                .background(MochyCoral.copy(alpha = 0.2f)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text("MR", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MochyCoral)
-                        }
-                        Spacer(modifier = Modifier.width(12.dp))
+                        Text("MR", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MochyCoral)
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column {
                         Text(
-                            text = "meet da dev and contributors :3",
+                            text = "Meet Lead Developer: Mahfuz Rahman",
                             style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.SemiBold,
+                            fontWeight = FontWeight.Bold,
                             color = TextPrimary
                         )
-                    }
-                }
-
-                // Join Discord
-                Surface(
-                    color = Color(0xFF16161B),
-                    shape = RoundedCornerShape(18.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(32.dp)
-                                .clip(CircleShape)
-                                .background(Color(0xFF5865F2).copy(alpha = 0.25f)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text("💬", fontSize = 12.sp)
-                        }
-                        Spacer(modifier = Modifier.width(12.dp))
                         Text(
-                            text = "Join mochy's discord server!",
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.SemiBold,
-                            color = TextPrimary
+                            text = "github.com/rmdmahfuz727-sudo",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = TextSecondary
                         )
                     }
                 }
@@ -369,7 +332,7 @@ fun ProfileScreen(
         // ── Settings Header ─────────────────────────────────────────────
         item {
             Text(
-                text = "Settings",
+                text = "Settings & Customization",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
                 color = TextPrimary,
@@ -414,59 +377,7 @@ fun ProfileScreen(
             )
         }
 
-        // ── Recommended Item Card ───────────────────────────────────────
-        item {
-            Surface(
-                color = Color(0xFF16161B),
-                shape = RoundedCornerShape(20.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
-                    .border(1.dp, Color.White.copy(alpha = 0.06f), RoundedCornerShape(20.dp))
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(
-                        text = "Recommended item",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = TextSecondary,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                    Spacer(modifier = Modifier.height(10.dp))
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(
-                            modifier = Modifier
-                                .size(36.dp)
-                                .clip(CircleShape)
-                                .background(Color.White.copy(alpha = 0.08f)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Headphones,
-                                contentDescription = null,
-                                tint = Color.White,
-                                modifier = Modifier.size(18.dp)
-                            )
-                        }
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Column {
-                            Text(
-                                text = "Start playing when your headphones connect",
-                                style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = TextPrimary
-                            )
-                            Text(
-                                text = "Settings > Playback",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = TextSecondary
-                            )
-                        }
-                    }
-                }
-            }
-        }
-
-        // ── Capsule Settings Items ──────────────────────────────────────
+        // ── Clean, Functional Settings Items ────────────────────────────
         item {
             Column(
                 modifier = Modifier
@@ -477,7 +388,7 @@ fun ProfileScreen(
                 // Audio Lab
                 MochySettingsPill(
                     icon = Icons.Default.GraphicEq,
-                    title = "Audio Lab",
+                    title = "Audio Lab (3D Spatializer & EQ)",
                     onClick = onOpenAudioLab,
                     isHighlighted = true
                 )
@@ -485,49 +396,25 @@ fun ProfileScreen(
                 // Playback
                 MochySettingsPill(
                     icon = Icons.Default.PlayArrow,
-                    title = "Playback"
+                    title = "Playback (Gapless & Crossfade)"
                 )
 
                 // Now playing
                 MochySettingsPill(
                     icon = Icons.Default.Headphones,
-                    title = "Now playing"
-                )
-
-                // App behaviour
-                MochySettingsPill(
-                    icon = Icons.Default.Settings,
-                    title = "App behaviour"
+                    title = "Now Playing & Waveform Styles"
                 )
 
                 // Customisation
                 MochySettingsPill(
                     icon = Icons.Default.Palette,
-                    title = "Customisation"
+                    title = "Theme & Anime VFX Customization"
                 )
 
                 // Storage
                 MochySettingsPill(
                     icon = Icons.Default.Storage,
-                    title = "Storage"
-                )
-
-                // Integrations
-                MochySettingsPill(
-                    icon = Icons.Default.Star,
-                    title = "Integrations"
-                )
-
-                // Device integration
-                MochySettingsPill(
-                    icon = Icons.Default.Cast,
-                    title = "Device integration"
-                )
-
-                // Modules
-                MochySettingsPill(
-                    icon = Icons.Default.ViewModule,
-                    title = "Modules"
+                    title = "Storage & Cache Management"
                 )
             }
         }

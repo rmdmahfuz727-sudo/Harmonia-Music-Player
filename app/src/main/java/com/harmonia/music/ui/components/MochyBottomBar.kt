@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -20,9 +19,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.QueueMusic
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.LibraryMusic
+import androidx.compose.material.icons.outlined.QueueMusic
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
@@ -37,13 +38,16 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
-import com.harmonia.music.ui.theme.DarkSurfaceElevated
 import com.harmonia.music.ui.theme.MochyCoral
 
 /**
- * Mochy Signature Floating Frosted Capsule Navigation Bar.
- * Matches the screenshots: floating pill dock with 4 icons (Home, Search, Library, Profile/More),
- * active pill indicator, frosted blur, and smooth spring scale transitions.
+ * Mochy Signature Floating Frosted Capsule Navigation Bar (5 Tabs).
+ * Floating frosted pill dock:
+ *  0: Home (Discover & stream online)
+ *  1: Explore (Search & Moods)
+ *  2: Library (Songs, Albums, Artists)
+ *  3: Playlists (Custom queues & favorites)
+ *  4: Profile (Mahfuz Rahman ID & Settings)
  */
 @Composable
 fun MochyBottomBar(
@@ -56,7 +60,7 @@ fun MochyBottomBar(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 24.dp, vertical = 12.dp),
+            .padding(horizontal = 16.dp, vertical = 10.dp),
         contentAlignment = Alignment.Center
     ) {
         // Floating Frosted Capsule Dock
@@ -65,15 +69,15 @@ fun MochyBottomBar(
                 .shadow(
                     elevation = 20.dp,
                     shape = RoundedCornerShape(32.dp),
-                    spotColor = Color.Black.copy(alpha = 0.6f)
+                    spotColor = Color.Black.copy(alpha = 0.65f)
                 )
                 .clip(RoundedCornerShape(32.dp))
-                .background(Color(0xFF16161B).copy(alpha = 0.92f))
+                .background(Color(0xFF16161B).copy(alpha = 0.94f))
                 .border(1.dp, Color.White.copy(alpha = 0.08f), RoundedCornerShape(32.dp))
-                .padding(horizontal = 10.dp, vertical = 6.dp)
+                .padding(horizontal = 8.dp, vertical = 5.dp)
         ) {
             Row(
-                modifier = Modifier.fillMaxWidth(0.92f),
+                modifier = Modifier.fillMaxWidth(0.96f),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -94,9 +98,9 @@ fun MochyBottomBar(
                     isSelected = selectedTab == 1,
                     selectedIcon = Icons.Filled.Search,
                     unselectedIcon = Icons.Outlined.Search,
-                    contentDescription = "Search",
+                    contentDescription = "Explore",
                     onClick = {
-                        vfx.triggerMangaSfx("カチッ!", Offset(320f, 1900f), color = MochyCoral)
+                        vfx.triggerMangaSfx("カチッ!", Offset(300f, 1900f), color = MochyCoral)
                         onTabSelected(1)
                     }
                 )
@@ -108,7 +112,7 @@ fun MochyBottomBar(
                     unselectedIcon = Icons.Outlined.LibraryMusic,
                     contentDescription = "Library",
                     onClick = {
-                        vfx.triggerMangaSfx("カチッ!", Offset(520f, 1900f), color = MochyCoral)
+                        vfx.triggerMangaSfx("カチッ!", Offset(500f, 1900f), color = MochyCoral)
                         onTabSelected(2)
                     }
                 )
@@ -116,13 +120,25 @@ fun MochyBottomBar(
                 MochyNavTabItem(
                     index = 3,
                     isSelected = selectedTab == 3,
+                    selectedIcon = Icons.Filled.QueueMusic,
+                    unselectedIcon = Icons.Outlined.QueueMusic,
+                    contentDescription = "Playlists",
+                    onClick = {
+                        vfx.triggerMangaSfx("カチッ!", Offset(700f, 1900f), color = MochyCoral)
+                        onTabSelected(3)
+                    }
+                )
+
+                MochyNavTabItem(
+                    index = 4,
+                    isSelected = selectedTab == 4,
                     selectedIcon = Icons.Filled.PlayArrow,
                     unselectedIcon = Icons.Filled.PlayArrow,
                     contentDescription = "Profile",
                     isCustomMochyIcon = true,
                     onClick = {
-                        vfx.triggerMangaSfx("カチッ!", Offset(720f, 1900f), color = MochyCoral)
-                        onTabSelected(3)
+                        vfx.triggerMangaSfx("カチッ!", Offset(900f, 1900f), color = MochyCoral)
+                        onTabSelected(4)
                     }
                 )
             }
@@ -164,22 +180,21 @@ private fun MochyNavTabItem(
     Box(
         modifier = Modifier
             .scale(scale)
-            .clip(RoundedCornerShape(24.dp))
+            .clip(RoundedCornerShape(20.dp))
             .background(activeBgColor)
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,
                 onClick = onClick
             )
-            .padding(horizontal = 20.dp, vertical = 10.dp),
+            .padding(horizontal = 14.dp, vertical = 8.dp),
         contentAlignment = Alignment.Center
     ) {
         if (isCustomMochyIcon) {
-            // Mochy Signature Arrow/Badge Icon
             Box(
                 modifier = Modifier
                     .size(24.dp)
-                    .clip(RoundedCornerShape(8.dp))
+                    .clip(RoundedCornerShape(7.dp))
                     .background(if (isSelected) MochyCoral else Color.Transparent),
                 contentAlignment = Alignment.Center
             ) {
@@ -195,7 +210,7 @@ private fun MochyNavTabItem(
                 imageVector = if (isSelected) selectedIcon else unselectedIcon,
                 contentDescription = contentDescription,
                 tint = iconColor,
-                modifier = Modifier.size(24.dp)
+                modifier = Modifier.size(22.dp)
             )
         }
     }

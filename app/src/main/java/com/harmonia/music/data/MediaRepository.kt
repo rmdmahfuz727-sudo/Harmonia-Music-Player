@@ -2,6 +2,7 @@ package com.harmonia.music.data
 
 import android.content.Context
 import android.content.SharedPreferences
+import com.harmonia.music.model.Playlist
 import com.harmonia.music.model.Track
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -11,6 +12,9 @@ class MediaRepository(private val context: Context) {
 
     private val localSource = LocalAudioDataSource(context)
     val ytClient = YouTubeMusicClient()
+    val lyricsClient = LrcLibClient()
+    val playlistManager = PlaylistManager(context)
+
     private val favPrefs: SharedPreferences =
         context.getSharedPreferences("harmonia_favorites", Context.MODE_PRIVATE)
 
@@ -29,6 +33,8 @@ class MediaRepository(private val context: Context) {
 
     private val _favorites = MutableStateFlow<List<Track>>(emptyList())
     val favorites: StateFlow<List<Track>> = _favorites.asStateFlow()
+
+    val playlists: StateFlow<List<Playlist>> = playlistManager.playlists
 
     suspend fun refreshLocalTracks() {
         val favIds = getFavoriteIds()
@@ -54,8 +60,33 @@ class MediaRepository(private val context: Context) {
         return ytClient.resolveStreamUrl(videoId)
     }
 
+    suspend fun fetchLyrics(track: Track): LyricsResult? {
+        val durationSec = track.durationMs / 1000
+        return lyricsClient.getLyrics(track.title, track.artist, track.album, durationSec)
+    }
+
     fun clearYtSearch() {
         _ytSearchResults.value = emptyList()
+    }
+
+    fun createPlaylist(name: String): Playlist {
+        return playlistManager.createPlaylist(name)
+    }
+
+    fun deletePlaylist(playlistId: String) {
+        playlistManager.deletePlaylist(playlistId)
+    }
+
+    fun addTrackToPlaylist(playlistId: String, trackId: String) {
+        playlistManager.addTrackToPlaylist(playlistId, trackId)
+    }
+
+    fun removeTrackFromPlaylist(playlistId: String, trackId: String) {
+        playlistManager.removeTrackFromPlaylist(playlistId, trackId)
+    }
+
+    fun renamePlaylist(playlistId: String, newName: String) {
+        playlistManager.renamePlaylist(playlistId, newName)
     }
 
     fun toggleFavorite(track: Track): Boolean {

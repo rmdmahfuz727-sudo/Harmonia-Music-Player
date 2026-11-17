@@ -97,6 +97,7 @@ fun MainScreen(
     val ytSearchResults by viewModel.ytSearchResults.collectAsState()
     val ytTrending by viewModel.ytTrending.collectAsState()
     val isSearchingYT by viewModel.isSearchingYT.collectAsState()
+    val playlists by viewModel.playlists.collectAsState()
 
     var isPlayerExpanded by remember { mutableStateOf(false) }
     var showAboutDialog by remember { mutableStateOf(false) }
@@ -145,7 +146,7 @@ fun MainScreen(
                             onShuffleAll = { list -> viewModel.shuffleAll(list) },
                             onFavoriteToggle = { track -> viewModel.toggleFavorite(track) },
                             onYtTrackClick = { track -> viewModel.playYtTrack(track) },
-                            onOpenProfile = { viewModel.selectTab(3) }
+                            onOpenProfile = { viewModel.selectTab(4) }
                         )
 
                         1 -> SearchScreen(
@@ -155,7 +156,7 @@ fun MainScreen(
                             playbackState = playbackState,
                             onQueryChange = { viewModel.updateSearchQuery(it) },
                             onTrackClick = { track -> viewModel.playYtTrack(track) },
-                            onOpenProfile = { viewModel.selectTab(3) }
+                            onOpenProfile = { viewModel.selectTab(4) }
                         )
 
                         2 -> LibraryScreen(
@@ -166,10 +167,26 @@ fun MainScreen(
                             onRequestPermission = onRequestPermission,
                             onTrackClick = { track, list -> viewModel.playTrack(track, list) },
                             onFavoriteToggle = { track -> viewModel.toggleFavorite(track) },
-                            onOpenProfile = { viewModel.selectTab(3) }
+                            onOpenProfile = { viewModel.selectTab(4) }
                         )
 
-                        3 -> ProfileScreen(
+                        3 -> PlaylistsScreen(
+                            playlists = playlists,
+                            tracks = localTracks,
+                            playbackState = playbackState,
+                            onCreatePlaylist = { name -> viewModel.createPlaylist(name) },
+                            onDeletePlaylist = { id -> viewModel.deletePlaylist(id) },
+                            onPlayPlaylist = { playlist ->
+                                // Play tracks from playlist
+                                val playlistTracks = localTracks.filter { it.id in playlist.trackIds }
+                                if (playlistTracks.isNotEmpty()) {
+                                    viewModel.playTrack(playlistTracks.first(), playlistTracks)
+                                }
+                            },
+                            onOpenProfile = { viewModel.selectTab(4) }
+                        )
+
+                        4 -> ProfileScreen(
                             onOpenAudioLab = { showAudioLabSheet = true },
                             onShowAboutDialog = { showAboutDialog = true }
                         )
@@ -215,7 +232,7 @@ fun MainScreen(
                     )
                 }
 
-                // Mochy Floating 4-Tab Capsule Dock
+                // Mochy Floating 5-Tab Capsule Dock
                 MochyBottomBar(
                     selectedTab = selectedTab,
                     onTabSelected = { tabIndex -> viewModel.selectTab(tabIndex) }
@@ -240,7 +257,11 @@ fun MainScreen(
             onCycleRepeat = { viewModel.playerController.cycleRepeatMode() },
             onToggleFavorite = {
                 playbackState.currentTrack?.let { viewModel.toggleFavorite(it) }
-            }
+            },
+            onSelectStyle = { style -> viewModel.setPlayerStyle(style) },
+            onSetPlaybackSpeed = { speed -> viewModel.setPlaybackSpeed(speed) },
+            onSetSleepTimer = { minutes -> viewModel.setSleepTimer(minutes) },
+            onSelectQueueTrack = { index -> viewModel.playerController.playQueueAt(index) }
         )
     }
 

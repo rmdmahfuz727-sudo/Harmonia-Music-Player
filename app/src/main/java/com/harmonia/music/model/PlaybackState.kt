@@ -1,9 +1,18 @@
 package com.harmonia.music.model
 
+import com.harmonia.music.data.LyricsResult
+
 enum class RepeatMode {
     OFF,
     ALL,
     ONE
+}
+
+enum class PlayerStyle(val displayName: String) {
+    FLAGSHIP("Mochy Flagship"),
+    VINYL("Vinyl Turntable"),
+    CANVAS("Minimal Canvas"),
+    LYRICS("Lyrics Focus")
 }
 
 data class PlaybackState(
@@ -16,7 +25,12 @@ data class PlaybackState(
     val repeatMode: RepeatMode = RepeatMode.OFF,
     val queue: List<Track> = emptyList(),
     val queueIndex: Int = -1,
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+    val lyrics: LyricsResult? = null,
+    val isLoadingLyrics: Boolean = false,
+    val playerStyle: PlayerStyle = PlayerStyle.FLAGSHIP,
+    val playbackSpeed: Float = 1.0f,
+    val sleepTimerMinutes: Int = 0
 ) {
     val progressFraction: Float
         get() = if (durationMs > 0) {

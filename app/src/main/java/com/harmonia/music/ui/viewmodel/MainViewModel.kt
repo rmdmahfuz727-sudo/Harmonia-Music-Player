@@ -43,6 +43,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     val ytSearchResults: StateFlow<List<Track>> = repository.ytSearchResults
     val ytTrending: StateFlow<List<Track>> = repository.ytTrending
+    val playlists: StateFlow<List<com.harmonia.music.model.Playlist>> = repository.playlists
 
     val localTracks: StateFlow<List<Track>> = combine(
         repository.localTracks,
@@ -152,6 +153,34 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun toggleFavorite(track: Track) {
         repository.toggleFavorite(track)
+    }
+
+    fun createPlaylist(name: String): com.harmonia.music.model.Playlist {
+        return repository.createPlaylist(name)
+    }
+
+    fun deletePlaylist(playlistId: String) {
+        repository.deletePlaylist(playlistId)
+    }
+
+    fun addTrackToPlaylist(playlistId: String, trackId: String) {
+        repository.addTrackToPlaylist(playlistId, trackId)
+    }
+
+    fun removeTrackFromPlaylist(playlistId: String, trackId: String) {
+        repository.removeTrackFromPlaylist(playlistId, trackId)
+    }
+
+    fun setPlayerStyle(style: com.harmonia.music.model.PlayerStyle) {
+        playerController.setPlayerStyle(style)
+    }
+
+    fun setPlaybackSpeed(speed: Float) {
+        playerController.setPlaybackSpeed(speed)
+    }
+
+    fun setSleepTimer(minutes: Int) {
+        playerController.setSleepTimer(minutes)
     }
 
     override fun onCleared() {
