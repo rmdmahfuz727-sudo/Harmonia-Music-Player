@@ -1,0 +1,202 @@
+package com.harmonia.music.ui.components
+
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.LibraryMusic
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.LibraryMusic
+import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material3.Icon
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.unit.dp
+import com.harmonia.music.ui.theme.DarkSurfaceElevated
+import com.harmonia.music.ui.theme.MochyCoral
+
+/**
+ * Mochy Signature Floating Frosted Capsule Navigation Bar.
+ * Matches the screenshots: floating pill dock with 4 icons (Home, Search, Library, Profile/More),
+ * active pill indicator, frosted blur, and smooth spring scale transitions.
+ */
+@Composable
+fun MochyBottomBar(
+    selectedTab: Int,
+    onTabSelected: (Int) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val vfx = LocalSakugaVfx.current
+
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp, vertical = 12.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        // Floating Frosted Capsule Dock
+        Box(
+            modifier = Modifier
+                .shadow(
+                    elevation = 20.dp,
+                    shape = RoundedCornerShape(32.dp),
+                    spotColor = Color.Black.copy(alpha = 0.6f)
+                )
+                .clip(RoundedCornerShape(32.dp))
+                .background(Color(0xFF16161B).copy(alpha = 0.92f))
+                .border(1.dp, Color.White.copy(alpha = 0.08f), RoundedCornerShape(32.dp))
+                .padding(horizontal = 10.dp, vertical = 6.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(0.92f),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                MochyNavTabItem(
+                    index = 0,
+                    isSelected = selectedTab == 0,
+                    selectedIcon = Icons.Filled.Home,
+                    unselectedIcon = Icons.Outlined.Home,
+                    contentDescription = "Home",
+                    onClick = {
+                        vfx.triggerMangaSfx("カチッ!", Offset(120f, 1900f), color = MochyCoral)
+                        onTabSelected(0)
+                    }
+                )
+
+                MochyNavTabItem(
+                    index = 1,
+                    isSelected = selectedTab == 1,
+                    selectedIcon = Icons.Filled.Search,
+                    unselectedIcon = Icons.Outlined.Search,
+                    contentDescription = "Search",
+                    onClick = {
+                        vfx.triggerMangaSfx("カチッ!", Offset(320f, 1900f), color = MochyCoral)
+                        onTabSelected(1)
+                    }
+                )
+
+                MochyNavTabItem(
+                    index = 2,
+                    isSelected = selectedTab == 2,
+                    selectedIcon = Icons.Filled.LibraryMusic,
+                    unselectedIcon = Icons.Outlined.LibraryMusic,
+                    contentDescription = "Library",
+                    onClick = {
+                        vfx.triggerMangaSfx("カチッ!", Offset(520f, 1900f), color = MochyCoral)
+                        onTabSelected(2)
+                    }
+                )
+
+                MochyNavTabItem(
+                    index = 3,
+                    isSelected = selectedTab == 3,
+                    selectedIcon = Icons.Filled.PlayArrow,
+                    unselectedIcon = Icons.Filled.PlayArrow,
+                    contentDescription = "Profile",
+                    isCustomMochyIcon = true,
+                    onClick = {
+                        vfx.triggerMangaSfx("カチッ!", Offset(720f, 1900f), color = MochyCoral)
+                        onTabSelected(3)
+                    }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun MochyNavTabItem(
+    index: Int,
+    isSelected: Boolean,
+    selectedIcon: ImageVector,
+    unselectedIcon: ImageVector,
+    contentDescription: String,
+    isCustomMochyIcon: Boolean = false,
+    onClick: () -> Unit
+) {
+    val scale by animateFloatAsState(
+        targetValue = if (isSelected) 1.05f else 1f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessLow
+        ),
+        label = "nav_scale_$index"
+    )
+
+    val activeBgColor by animateColorAsState(
+        targetValue = if (isSelected) Color.White.copy(alpha = 0.16f) else Color.Transparent,
+        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+        label = "nav_bg_$index"
+    )
+
+    val iconColor by animateColorAsState(
+        targetValue = if (isSelected) Color.White else Color(0xFF7E7E88),
+        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+        label = "nav_icon_$index"
+    )
+
+    Box(
+        modifier = Modifier
+            .scale(scale)
+            .clip(RoundedCornerShape(24.dp))
+            .background(activeBgColor)
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClick = onClick
+            )
+            .padding(horizontal = 20.dp, vertical = 10.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        if (isCustomMochyIcon) {
+            // Mochy Signature Arrow/Badge Icon
+            Box(
+                modifier = Modifier
+                    .size(24.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(if (isSelected) MochyCoral else Color.Transparent),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.PlayArrow,
+                    contentDescription = contentDescription,
+                    tint = if (isSelected) Color.White else iconColor,
+                    modifier = Modifier.size(16.dp)
+                )
+            }
+        } else {
+            Icon(
+                imageVector = if (isSelected) selectedIcon else unselectedIcon,
+                contentDescription = contentDescription,
+                tint = iconColor,
+                modifier = Modifier.size(24.dp)
+            )
+        }
+    }
+}

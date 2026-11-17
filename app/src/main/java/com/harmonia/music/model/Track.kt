@@ -16,7 +16,9 @@ data class Track(
     val artworkUri: String? = null,
     val isStream: Boolean = false,
     val streamGenre: String? = null,
-    val isFavorite: Boolean = false
+    val isFavorite: Boolean = false,
+    val isYouTube: Boolean = false,
+    val youtubeId: String? = null
 ) {
     val formattedDuration: String
         get() {

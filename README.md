@@ -1,4 +1,4 @@
-# 🎵 Harmonia — Modern Android Music & Radio Player
+# 🎵 Harmonia — Modern Android Music & YouTube Music Player
 
 [![Developer](https://img.shields.io/badge/Developer-Mahfuz%20Rahman-E85D75?style=for-the-badge&logo=github)](https://github.com/rmdmahfuz727-sudo)
 [![Platform](https://img.shields.io/badge/Platform-Android-3DDC84?style=for-the-badge&logo=android)](https://www.android.com/)
@@ -7,7 +7,7 @@
 [![Audio](https://img.shields.io/badge/Audio-AndroidX%20Media3-FF6F00?style=for-the-badge)](https://developer.android.com/media/media3)
 [![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](LICENSE)
 
-Harmonia is an expressive, fluid native Android music and live radio streaming player built with **Jetpack Compose**, **Material 3**, and **AndroidX Media3 (ExoPlayer)**.
+Harmonia is an expressive, fluid native Android local music and YouTube Music streaming player built with **Jetpack Compose**, **Material 3**, and **AndroidX Media3 (ExoPlayer)**.
 
 ---
 
@@ -34,12 +34,13 @@ Harmonia is built as an independent open-source player, drawing creative and arc
 
 ## 🌟 Key Features
 
+- **YouTube Music Online Client**: Search millions of tracks, explore mood/genre filters, browse trending charts, and stream seamlessly.
 - **Fluid 120 FPS Performance**: Hardware-accelerated transforms using `graphicsLayer` without layout recomposition.
 - **Expressive Motion**: Volume-preserving squash and spring overshoot on interactive elements.
 - **Dynamic Waveform**: Animated harmonic seek bar along the playback timeline.
 - **AudioLab**: 3D spatial audio field, dynamic bass boost, and acoustic reverb presets.
 - **Background Playback**: Full MediaSessionService support with lockscreen controls and notification actions.
-- **Local & Stream Support**: Automatic discovery of device audio files and curated live internet radio stations.
+- **Local Library Discovery**: Automatic scanning and categorization of device audio files with instant search.
 
 ---
 

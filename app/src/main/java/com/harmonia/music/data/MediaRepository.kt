@@ -10,7 +10,7 @@ import kotlinx.coroutines.flow.asStateFlow
 class MediaRepository(private val context: Context) {
 
     private val localSource = LocalAudioDataSource(context)
-    private val streamSource = OnlineStreamDataSource(context)
+    val ytClient = YouTubeMusicClient()
     private val favPrefs: SharedPreferences =
         context.getSharedPreferences("harmonia_favorites", Context.MODE_PRIVATE)
 
@@ -21,8 +21,11 @@ class MediaRepository(private val context: Context) {
     private val _localTracks = MutableStateFlow<List<Track>>(emptyList())
     val localTracks: StateFlow<List<Track>> = _localTracks.asStateFlow()
 
-    private val _streams = MutableStateFlow<List<Track>>(emptyList())
-    val streams: StateFlow<List<Track>> = _streams.asStateFlow()
+    private val _ytSearchResults = MutableStateFlow<List<Track>>(emptyList())
+    val ytSearchResults: StateFlow<List<Track>> = _ytSearchResults.asStateFlow()
+
+    private val _ytTrending = MutableStateFlow<List<Track>>(emptyList())
+    val ytTrending: StateFlow<List<Track>> = _ytTrending.asStateFlow()
 
     private val _favorites = MutableStateFlow<List<Track>>(emptyList())
     val favorites: StateFlow<List<Track>> = _favorites.asStateFlow()
@@ -36,24 +39,23 @@ class MediaRepository(private val context: Context) {
         updateFavoritesList()
     }
 
-    suspend fun refreshStreams() {
-        val favIds = getFavoriteIds()
-        val streamTracks = streamSource.getStreams().map { track ->
-            track.copy(isFavorite = favIds.contains(track.id))
-        }
-        _streams.value = streamTracks
-        updateFavoritesList()
+    suspend fun searchYouTubeMusic(query: String): List<Track> {
+        val results = ytClient.search(query)
+        _ytSearchResults.value = results
+        return results
     }
 
-    suspend fun addCustomStream(name: String, url: String, genre: String): Track {
-        val created = streamSource.addCustomStream(name, url, genre)
-        refreshStreams()
-        return created
+    suspend fun refreshYtTrending() {
+        val trending = ytClient.getTrending()
+        _ytTrending.value = trending
     }
 
-    suspend fun removeCustomStream(url: String) {
-        streamSource.removeCustomStream(url)
-        refreshStreams()
+    suspend fun resolveYtStreamUrl(videoId: String): String? {
+        return ytClient.resolveStreamUrl(videoId)
+    }
+
+    fun clearYtSearch() {
+        _ytSearchResults.value = emptyList()
     }
 
     fun toggleFavorite(track: Track): Boolean {
@@ -72,11 +74,6 @@ class MediaRepository(private val context: Context) {
             if (it.id == track.id) it.copy(isFavorite = willBeFav) else it
         }
 
-        // Update streams state
-        _streams.value = _streams.value.map {
-            if (it.id == track.id) it.copy(isFavorite = willBeFav) else it
-        }
-
         updateFavoritesList()
         return willBeFav
     }
@@ -87,7 +84,7 @@ class MediaRepository(private val context: Context) {
 
     private fun updateFavoritesList() {
         val favIds = getFavoriteIds()
-        val allTracks = _localTracks.value + _streams.value
+        val allTracks = _localTracks.value
         _favorites.value = allTracks.filter { favIds.contains(it.id) }.distinctBy { it.id }
     }
 }

@@ -1,5 +1,8 @@
 package com.harmonia.music.ui.components
 
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -20,12 +23,12 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -44,14 +47,13 @@ import com.harmonia.music.R
 import com.harmonia.music.model.PlaybackState
 import com.harmonia.music.ui.theme.DarkSurfaceElevated
 import com.harmonia.music.ui.theme.MochyCoral
-import com.harmonia.music.ui.theme.MochyCoralGlow
-import com.harmonia.music.ui.theme.MochyPillBackground
-import com.harmonia.music.ui.theme.MochySubtleText
 import com.harmonia.music.ui.theme.TextPrimary
 import com.harmonia.music.ui.theme.TextSecondary
 
 /**
- * Mochy-styled Frosted Capsule Mini Player with Sakuga Spring Squash Physics.
+ * Mochy Signature Docked Mini Player.
+ * Matches screenshots: floating frosted glass capsule, squircle cover,
+ * crisp title & artist, white play/pause and skip icons, and subtle bottom progress bar.
  */
 @Composable
 fun MiniPlayer(
@@ -63,35 +65,34 @@ fun MiniPlayer(
 ) {
     val track = playbackState.currentTrack ?: return
     val context = LocalContext.current
-    val vfx = LocalSakugaVfx.current
 
     Surface(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 14.dp, vertical = 6.dp)
-            .shadow(16.dp, RoundedCornerShape(22.dp), spotColor = MochyCoralGlow)
-            .sakugaSquash(squashAmount = 0.96f) {
+            .padding(horizontal = 14.dp, vertical = 4.dp)
+            .shadow(16.dp, RoundedCornerShape(18.dp), spotColor = Color.Black.copy(alpha = 0.5f))
+            .clip(RoundedCornerShape(18.dp))
+            .border(1.dp, Color.White.copy(alpha = 0.08f), RoundedCornerShape(18.dp))
+            .sakugaSquash(squashAmount = 0.97f) {
                 onExpandClick()
-            }
-            .clip(RoundedCornerShape(22.dp))
-            .border(1.dp, MochyCoral.copy(alpha = 0.35f), RoundedCornerShape(22.dp)),
-        color = MochyPillBackground,
-        shape = RoundedCornerShape(22.dp)
+            },
+        color = Color(0xFF141418).copy(alpha = 0.95f),
+        shape = RoundedCornerShape(18.dp)
     ) {
         Column {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 9.dp),
+                    .padding(horizontal = 10.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Mochy Squircle Artwork Tile
+                // Squircle Album Artwork
                 Box(
                     modifier = Modifier
                         .size(46.dp)
-                        .clip(RoundedCornerShape(12.dp))
+                        .clip(RoundedCornerShape(10.dp))
                         .background(DarkSurfaceElevated)
-                        .border(1.dp, Color.White.copy(alpha = 0.15f), RoundedCornerShape(12.dp)),
+                        .border(1.dp, Color.White.copy(alpha = 0.08f), RoundedCornerShape(10.dp)),
                     contentAlignment = Alignment.Center
                 ) {
                     AsyncImage(
@@ -110,97 +111,84 @@ fun MiniPlayer(
                 Spacer(modifier = Modifier.width(12.dp))
 
                 // Track Title & Artist
-                Column(
-                    modifier = Modifier.weight(1f)
-                ) {
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = track.title,
-                        style = MaterialTheme.typography.titleMedium,
+                        style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.Bold,
                         color = TextPrimary,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
                     Text(
-                        text = if (track.isStream) "LIVE • ${track.artist}" else track.artist,
+                        text = if (track.album.isNotBlank()) "${track.artist} — ${track.album}" else track.artist,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = if (track.isStream) MochySubtleText else TextSecondary,
+                        color = TextSecondary,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
                 }
 
-                // Mini Fluid Visualizer (6 bars)
-                if (playbackState.isPlaying) {
-                    FluidVisualizer(
-                        isPlaying = true,
-                        barCount = 6,
-                        height = 20.dp,
-                        modifier = Modifier.width(36.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                }
-
-                // Mochy Pill Play/Pause Button with Sakuga Squash
-                Surface(
-                    color = MochyCoral,
-                    shape = RoundedCornerShape(16.dp),
+                // Play / Pause Icon Button
+                Box(
                     modifier = Modifier
-                        .size(width = 44.dp, height = 40.dp)
-                        .sakugaSquash(squashAmount = 0.85f) {
-                            onPlayPauseClick()
-                        }
+                        .size(40.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                            onClick = onPlayPauseClick
+                        ),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        if (playbackState.isBuffering) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(20.dp),
-                                color = Color.White,
-                                strokeWidth = 2.dp
-                            )
-                        } else {
-                            Icon(
-                                imageVector = if (playbackState.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                                contentDescription = if (playbackState.isPlaying) "Pause" else "Play",
-                                tint = Color.White,
-                                modifier = Modifier.size(24.dp)
-                            )
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.width(8.dp))
-
-                // Skip Next button with Sakuga Squash
-                Surface(
-                    color = Color.White.copy(alpha = 0.08f),
-                    shape = RoundedCornerShape(16.dp),
-                    modifier = Modifier
-                        .size(width = 38.dp, height = 40.dp)
-                        .sakugaSquash(squashAmount = 0.85f) {
-                            onSkipNextClick()
-                        }
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
+                    if (playbackState.isBuffering) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            color = MochyCoral,
+                            strokeWidth = 2.dp
+                        )
+                    } else {
                         Icon(
-                            imageVector = Icons.Default.SkipNext,
-                            contentDescription = "Next Track",
+                            imageVector = if (playbackState.isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                            contentDescription = if (playbackState.isPlaying) "Pause" else "Play",
                             tint = Color.White,
-                            modifier = Modifier.size(20.dp)
+                            modifier = Modifier.size(28.dp)
                         )
                     }
                 }
+
+                Spacer(modifier = Modifier.width(4.dp))
+
+                // Skip Next Icon Button
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                            onClick = onSkipNextClick
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.SkipNext,
+                        contentDescription = "Next Track",
+                        tint = Color.White,
+                        modifier = Modifier.size(28.dp)
+                    )
+                }
             }
 
-            // Bottom Mochy Coral Progress Indicator
-            if (!track.isStream && playbackState.durationMs > 0) {
+            // Bottom Thin Accent Progress Bar
+            if (playbackState.durationMs > 0) {
                 LinearProgressIndicator(
                     progress = { playbackState.progressFraction },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(2.5.dp),
+                        .height(2.dp),
                     color = MochyCoral,
-                    trackColor = Color.White.copy(alpha = 0.1f)
+                    trackColor = Color.White.copy(alpha = 0.06f)
                 )
             }
         }

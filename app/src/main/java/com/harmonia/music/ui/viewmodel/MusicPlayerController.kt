@@ -10,6 +10,7 @@ import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
 import com.google.common.util.concurrent.ListenableFuture
 import com.google.common.util.concurrent.MoreExecutors
+import com.harmonia.music.data.MediaRepository
 import com.harmonia.music.model.PlaybackState
 import com.harmonia.music.model.RepeatMode
 import com.harmonia.music.model.Track
@@ -28,7 +29,8 @@ import kotlinx.coroutines.launch
 @UnstableApi
 class MusicPlayerController(
     private val context: Context,
-    private val scope: CoroutineScope
+    private val scope: CoroutineScope,
+    private val repository: MediaRepository
 ) {
     private var controllerFuture: ListenableFuture<MediaController>? = null
     private var mediaController: MediaController? = null
@@ -187,6 +189,40 @@ class MusicPlayerController(
         val controller = mediaController ?: return
         if (tracks.isEmpty()) return
 
+        val startTrack = tracks.getOrNull(startIndex) ?: return
+
+        // If the starting track is a YouTube track, resolve its stream URL first
+        if (startTrack.isYouTube && startTrack.mediaUri.isBlank() && !startTrack.youtubeId.isNullOrBlank()) {
+            _playbackState.update {
+                it.copy(
+                    isBuffering = true,
+                    currentTrack = startTrack,
+                    errorMessage = null
+                )
+            }
+            scope.launch {
+                val streamUrl = repository.resolveYtStreamUrl(startTrack.youtubeId)
+                if (streamUrl != null) {
+                    val resolvedTrack = startTrack.copy(mediaUri = streamUrl)
+                    val resolvedTracks = tracks.toMutableList()
+                    resolvedTracks[startIndex] = resolvedTrack
+                    playResolvedQueue(resolvedTracks, startIndex)
+                } else {
+                    _playbackState.update {
+                        it.copy(
+                            isBuffering = false,
+                            errorMessage = "Could not resolve audio stream"
+                        )
+                    }
+                }
+            }
+        } else {
+            playResolvedQueue(tracks, startIndex)
+        }
+    }
+
+    private fun playResolvedQueue(tracks: List<Track>, startIndex: Int) {
+        val controller = mediaController ?: return
         currentQueue = tracks
         val mediaItems = tracks.map { it.toMediaItem() }
 

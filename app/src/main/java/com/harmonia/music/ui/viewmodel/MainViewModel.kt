@@ -21,7 +21,7 @@ import kotlinx.coroutines.launch
 class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private val repository = MediaRepository(application)
-    val playerController = MusicPlayerController(application, viewModelScope)
+    val playerController = MusicPlayerController(application, viewModelScope, repository)
 
     val playbackState: StateFlow<PlaybackState> = playerController.playbackState
 
@@ -31,11 +31,18 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
 
-    private val _selectedGenre = MutableStateFlow<String?>(null)
-    val selectedGenre: StateFlow<String?> = _selectedGenre.asStateFlow()
-
     private val _hasAudioPermission = MutableStateFlow(false)
     val hasAudioPermission: StateFlow<Boolean> = _hasAudioPermission.asStateFlow()
+
+    // YouTube Music state
+    private val _isSearchingYT = MutableStateFlow(false)
+    val isSearchingYT: StateFlow<Boolean> = _isSearchingYT.asStateFlow()
+
+    private val _isLoadingTrending = MutableStateFlow(false)
+    val isLoadingTrending: StateFlow<Boolean> = _isLoadingTrending.asStateFlow()
+
+    val ytSearchResults: StateFlow<List<Track>> = repository.ytSearchResults
+    val ytTrending: StateFlow<List<Track>> = repository.ytTrending
 
     val localTracks: StateFlow<List<Track>> = combine(
         repository.localTracks,
@@ -50,24 +57,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 it.album.contains(query, ignoreCase = true)
             }
         }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
-
-    val streams: StateFlow<List<Track>> = combine(
-        repository.streams,
-        _searchQuery,
-        _selectedGenre
-    ) { streams, query, genre ->
-        var list = streams
-        if (!genre.isNullOrBlank()) {
-            list = list.filter { it.streamGenre?.equals(genre, ignoreCase = true) == true }
-        }
-        if (query.isNotBlank()) {
-            list = list.filter {
-                it.title.contains(query, ignoreCase = true) ||
-                (it.streamGenre?.contains(query, ignoreCase = true) == true)
-            }
-        }
-        list
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val favorites: StateFlow<List<Track>> = combine(
@@ -85,8 +74,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     init {
+        // Load trending music on startup
         viewModelScope.launch {
-            repository.refreshStreams()
+            _isLoadingTrending.value = true
+            try {
+                repository.refreshYtTrending()
+            } catch (_: Exception) { }
+            _isLoadingTrending.value = false
         }
     }
 
@@ -105,10 +99,27 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun updateSearchQuery(query: String) {
         _searchQuery.value = query
+        // If on YT Music tab and query changes, trigger YT search
+        if (_selectedTab.value == 1 && query.isNotBlank()) {
+            searchYouTubeMusic(query)
+        } else if (query.isBlank()) {
+            repository.clearYtSearch()
+        }
     }
 
-    fun selectGenre(genre: String?) {
-        _selectedGenre.value = if (_selectedGenre.value == genre) null else genre
+    fun searchYouTubeMusic(query: String) {
+        viewModelScope.launch {
+            _isSearchingYT.value = true
+            try {
+                repository.searchYouTubeMusic(query)
+            } catch (_: Exception) { }
+            _isSearchingYT.value = false
+        }
+    }
+
+    fun searchYtByMood(mood: String) {
+        _searchQuery.value = mood
+        searchYouTubeMusic(mood)
     }
 
     fun refreshData() {
@@ -116,7 +127,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             if (_hasAudioPermission.value) {
                 repository.refreshLocalTracks()
             }
-            repository.refreshStreams()
         }
     }
 
@@ -129,6 +139,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         playerController.playSingle(track)
     }
 
+    fun playYtTrack(track: Track) {
+        // For YT tracks, resolve stream URL first then play
+        playerController.playSingle(track)
+    }
+
     fun shuffleAll(tracks: List<Track>) {
         if (tracks.isEmpty()) return
         val shuffled = tracks.shuffled()
@@ -137,18 +152,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun toggleFavorite(track: Track) {
         repository.toggleFavorite(track)
-    }
-
-    fun addCustomStream(name: String, url: String, genre: String) {
-        viewModelScope.launch {
-            repository.addCustomStream(name, url, genre)
-        }
-    }
-
-    fun removeCustomStream(url: String) {
-        viewModelScope.launch {
-            repository.removeCustomStream(url)
-        }
     }
 
     override fun onCleared() {
