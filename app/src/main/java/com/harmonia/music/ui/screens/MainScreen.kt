@@ -138,14 +138,10 @@ fun MainScreen(
                 ) { targetTab ->
                     when (targetTab) {
                         0 -> HomeScreen(
-                            tracks = localTracks,
                             trendingTracks = ytTrending,
-                            favorites = favorites,
                             playbackState = playbackState,
-                            onTrackClick = { track, list -> viewModel.playTrack(track, list) },
-                            onShuffleAll = { list -> viewModel.shuffleAll(list) },
-                            onFavoriteToggle = { track -> viewModel.toggleFavorite(track) },
                             onYtTrackClick = { track -> viewModel.playYtTrack(track) },
+                            onMoodSelect = { mood -> viewModel.searchYtByMood(mood) },
                             onOpenProfile = { viewModel.selectTab(4) }
                         )
 
