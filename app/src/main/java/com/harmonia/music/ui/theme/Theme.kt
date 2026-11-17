@@ -10,11 +10,11 @@ import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
 private val DarkColorScheme = darkColorScheme(
-    primary = AccentCyan,
+    primary = MochyCoral,
     onPrimary = DarkBackground,
-    primaryContainer = DarkSurfaceElevated,
-    onPrimaryContainer = AccentCyan,
-    secondary = AccentPurple,
+    primaryContainer = MochyPillBackground,
+    onPrimaryContainer = MochyCoralLight,
+    secondary = MochyCoralDark,
     onSecondary = TextPrimary,
     background = DarkBackground,
     onBackground = TextPrimary,

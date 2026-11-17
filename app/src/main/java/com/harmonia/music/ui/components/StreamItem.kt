@@ -1,18 +1,12 @@
 package com.harmonia.music.ui.components
 
 import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -40,10 +34,10 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -55,15 +49,17 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.harmonia.music.R
 import com.harmonia.music.model.Track
-import com.harmonia.music.ui.theme.AccentCyan
-import com.harmonia.music.ui.theme.AccentPink
-import com.harmonia.music.ui.theme.AccentPurple
 import com.harmonia.music.ui.theme.DarkSurfaceElevated
 import com.harmonia.music.ui.theme.DarkSurfaceVariant
-import com.harmonia.music.ui.theme.ErrorRed
+import com.harmonia.music.ui.theme.MochyCoral
+import com.harmonia.music.ui.theme.MochyCoralLight
+import com.harmonia.music.ui.theme.MochyPillBackground
 import com.harmonia.music.ui.theme.TextPrimary
 import com.harmonia.music.ui.theme.TextSecondary
 
+/**
+ * Mochy-styled Live Stream Station Card with Sakuga Spring Physics.
+ */
 @Composable
 fun StreamItem(
     stream: Track,
@@ -85,39 +81,22 @@ fun StreamItem(
         label = "pulse_alpha"
     )
 
-    // Fluid spring bounce on touch
-    val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
-    val pressScale by animateFloatAsState(
-        targetValue = if (isPressed) 0.97f else 1f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessMedium
-        ),
-        label = "stream_press_scale"
-    )
-
     Surface(
         modifier = modifier
             .fillMaxWidth()
-            .graphicsLayer {
-                scaleX = pressScale
-                scaleY = pressScale
+            .clip(RoundedCornerShape(18.dp))
+            .sakugaSquash(squashAmount = 0.96f) {
+                onStreamClick()
             }
-            .clip(RoundedCornerShape(16.dp))
-            .clickable(
-                interactionSource = interactionSource,
-                indication = null
-            ) { onStreamClick() }
             .then(
                 if (isCurrentTrack) {
-                    Modifier.border(1.5.dp, AccentCyan, RoundedCornerShape(16.dp))
+                    Modifier.border(1.5.dp, MochyCoral, RoundedCornerShape(18.dp))
                 } else {
-                    Modifier.border(1.dp, DarkSurfaceElevated, RoundedCornerShape(16.dp))
+                    Modifier.border(1.dp, Color.White.copy(alpha = 0.08f), RoundedCornerShape(18.dp))
                 }
             ),
-        color = DarkSurfaceVariant.copy(alpha = 0.7f),
-        shape = RoundedCornerShape(16.dp)
+        color = if (isCurrentTrack) MochyPillBackground else DarkSurfaceVariant.copy(alpha = 0.65f),
+        shape = RoundedCornerShape(18.dp)
     ) {
         Row(
             modifier = Modifier
@@ -129,8 +108,9 @@ fun StreamItem(
             Box(
                 modifier = Modifier
                     .size(56.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(DarkSurfaceElevated),
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(DarkSurfaceElevated)
+                    .border(1.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(14.dp)),
                 contentAlignment = Alignment.Center
             ) {
                 if (!stream.artworkUri.isNullOrEmpty()) {
@@ -149,7 +129,7 @@ fun StreamItem(
                     Icon(
                         imageVector = Icons.Default.Radio,
                         contentDescription = "Radio",
-                        tint = AccentCyan,
+                        tint = MochyCoral,
                         modifier = Modifier.size(28.dp)
                     )
                 }
@@ -181,12 +161,12 @@ fun StreamItem(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    // Pulsing LIVE badge in graphicsLayer
+                    // Mochy Coral LIVE Pill Badge
                     Box(
                         modifier = Modifier
-                            .clip(RoundedCornerShape(4.dp))
-                            .background(ErrorRed.copy(alpha = 0.2f))
-                            .padding(horizontal = 6.dp, vertical = 2.dp),
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(MochyCoral.copy(alpha = 0.2f))
+                            .padding(horizontal = 7.dp, vertical = 2.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -197,12 +177,12 @@ fun StreamItem(
                                         alpha = if (isCurrentTrack && isPlaying) pulseAlpha else 1f
                                     }
                                     .clip(CircleShape)
-                                    .background(ErrorRed)
+                                    .background(MochyCoral)
                             )
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
                                 text = "LIVE",
-                                color = ErrorRed,
+                                color = MochyCoral,
                                 fontSize = 9.sp,
                                 fontWeight = FontWeight.Bold
                             )
@@ -213,7 +193,7 @@ fun StreamItem(
                         Text(
                             text = genre,
                             style = MaterialTheme.typography.labelSmall,
-                            color = AccentPurple,
+                            color = MochyCoralLight,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
@@ -225,13 +205,14 @@ fun StreamItem(
                 Text(
                     text = stream.title,
                     style = MaterialTheme.typography.titleMedium,
-                    color = if (isCurrentTrack) AccentCyan else TextPrimary,
+                    fontWeight = FontWeight.Bold,
+                    color = if (isCurrentTrack) MochyCoral else TextPrimary,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
 
                 Text(
-                    text = stream.artist.ifBlank { "High-Definition Audio Stream" },
+                    text = stream.artist.ifBlank { "High-Definition Audio Broadcast" },
                     style = MaterialTheme.typography.bodyMedium,
                     color = TextSecondary,
                     maxLines = 1,
@@ -241,27 +222,35 @@ fun StreamItem(
 
             Spacer(modifier = Modifier.width(8.dp))
 
-            // Favorite Button
+            // Favorite Button with Sakuga Squash
             IconButton(
                 onClick = onFavoriteToggle,
-                modifier = Modifier.size(36.dp)
+                modifier = Modifier
+                    .size(36.dp)
+                    .sakugaSquash(squashAmount = 0.8f) {
+                        onFavoriteToggle()
+                    }
             ) {
                 Icon(
                     imageVector = if (stream.isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
                     contentDescription = if (stream.isFavorite) "Remove favorite" else "Add favorite",
-                    tint = if (stream.isFavorite) AccentPink else TextSecondary,
+                    tint = if (stream.isFavorite) MochyCoral else TextSecondary,
                     modifier = Modifier.size(20.dp)
                 )
             }
 
-            // Quick Play/Pause
+            // Quick Play/Pause Mochy Button with Sakuga Squash
             FilledIconButton(
                 onClick = onStreamClick,
                 colors = IconButtonDefaults.filledIconButtonColors(
-                    containerColor = if (isCurrentTrack && isPlaying) AccentCyan else DarkSurfaceElevated,
-                    contentColor = if (isCurrentTrack && isPlaying) DarkSurfaceVariant else TextPrimary
+                    containerColor = if (isCurrentTrack && isPlaying) MochyCoral else MochyPillBackground,
+                    contentColor = if (isCurrentTrack && isPlaying) Color.White else TextPrimary
                 ),
-                modifier = Modifier.size(40.dp)
+                modifier = Modifier
+                    .size(40.dp)
+                    .sakugaSquash(squashAmount = 0.85f) {
+                        onStreamClick()
+                    }
             ) {
                 Icon(
                     imageVector = if (isCurrentTrack && isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,

@@ -1,16 +1,14 @@
 package com.harmonia.music.ui.screens
 
-import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -24,13 +22,12 @@ import androidx.compose.material.icons.filled.Radio
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.ElevatedFilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -39,15 +36,18 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.harmonia.music.model.PlaybackState
 import com.harmonia.music.model.Track
 import com.harmonia.music.ui.components.StreamItem
-import com.harmonia.music.ui.theme.AccentCyan
-import com.harmonia.music.ui.theme.DarkBackground
+import com.harmonia.music.ui.components.sakugaSquash
 import com.harmonia.music.ui.theme.DarkSurfaceElevated
 import com.harmonia.music.ui.theme.DarkSurfaceVariant
+import com.harmonia.music.ui.theme.MochyCoral
+import com.harmonia.music.ui.theme.MochyPillBackground
 import com.harmonia.music.ui.theme.TextPrimary
 import com.harmonia.music.ui.theme.TextSecondary
 
@@ -76,7 +76,7 @@ fun OnlineStreamsScreen(
     }
 
     Column(modifier = modifier.fillMaxSize()) {
-        // Genre Chips Horizontal Row
+        // Mochy Genre Chips Horizontal Row
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -84,30 +84,47 @@ fun OnlineStreamsScreen(
                 .padding(horizontal = 16.dp, vertical = 6.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            ElevatedFilterChip(
-                selected = selectedGenre == null,
-                onClick = { onGenreSelect(null) },
-                label = { Text("All Streams") },
-                colors = FilterChipDefaults.elevatedFilterChipColors(
-                    selectedContainerColor = AccentCyan,
-                    selectedLabelColor = DarkBackground,
-                    containerColor = DarkSurfaceElevated,
-                    labelColor = TextSecondary
+            // "All Streams" Pill
+            val isAllSelected = selectedGenre == null
+            Surface(
+                color = if (isAllSelected) MochyCoral else MochyPillBackground,
+                shape = RoundedCornerShape(18.dp),
+                modifier = Modifier
+                    .sakugaSquash(squashAmount = 0.88f) { onGenreSelect(null) }
+                    .then(
+                        if (!isAllSelected) Modifier.border(1.dp, Color.White.copy(alpha = 0.12f), RoundedCornerShape(18.dp))
+                        else Modifier
+                    )
+            ) {
+                Text(
+                    text = "All Streams",
+                    color = if (isAllSelected) Color.White else TextSecondary,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp)
                 )
-            )
+            }
 
             genres.forEach { genre ->
-                ElevatedFilterChip(
-                    selected = selectedGenre == genre,
-                    onClick = { onGenreSelect(genre) },
-                    label = { Text(genre) },
-                    colors = FilterChipDefaults.elevatedFilterChipColors(
-                        selectedContainerColor = AccentCyan,
-                        selectedLabelColor = DarkBackground,
-                        containerColor = DarkSurfaceElevated,
-                        labelColor = TextSecondary
+                val isSelected = selectedGenre == genre
+                Surface(
+                    color = if (isSelected) MochyCoral else MochyPillBackground,
+                    shape = RoundedCornerShape(18.dp),
+                    modifier = Modifier
+                        .sakugaSquash(squashAmount = 0.88f) { onGenreSelect(genre) }
+                        .then(
+                            if (!isSelected) Modifier.border(1.dp, Color.White.copy(alpha = 0.12f), RoundedCornerShape(18.dp))
+                            else Modifier
+                        )
+                ) {
+                    Text(
+                        text = genre,
+                        color = if (isSelected) Color.White else TextSecondary,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp)
                     )
-                )
+                }
             }
         }
 
@@ -117,7 +134,7 @@ fun OnlineStreamsScreen(
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 120.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            // Header with Add Stream button
+            // Header with Mochy Add Stream button
             item {
                 Row(
                     modifier = Modifier
@@ -129,28 +146,35 @@ fun OnlineStreamsScreen(
                     Text(
                         text = "Curated Broadcasts (${streams.size})",
                         style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
                         color = TextSecondary
                     )
 
-                    Button(
-                        onClick = { showAddDialog = true },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = DarkSurfaceElevated,
-                            contentColor = AccentCyan
-                        ),
+                    Surface(
+                        color = MochyPillBackground,
                         shape = RoundedCornerShape(20.dp),
-                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp)
+                        modifier = Modifier
+                            .sakugaSquash(squashAmount = 0.88f) { showAddDialog = true }
+                            .border(1.dp, MochyCoral.copy(alpha = 0.35f), RoundedCornerShape(20.dp))
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Add,
-                            contentDescription = "Add Custom Stream",
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = "Add Stream",
-                            fontWeight = FontWeight.SemiBold
-                        )
+                        Row(
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Add,
+                                contentDescription = "Add Custom Stream",
+                                tint = MochyCoral,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "Add Stream",
+                                color = TextPrimary,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
                     }
                 }
             }
@@ -191,16 +215,17 @@ private fun AddCustomStreamDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         containerColor = DarkSurfaceVariant,
+        shape = RoundedCornerShape(24.dp),
         title = {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
                     imageVector = Icons.Default.Radio,
                     contentDescription = null,
-                    tint = AccentCyan,
+                    tint = MochyCoral,
                     modifier = Modifier.size(24.dp)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Add Custom Stream", color = TextPrimary)
+                Text("Add Custom Stream", color = TextPrimary, fontWeight = FontWeight.Bold)
             }
         },
         text = {
@@ -215,10 +240,11 @@ private fun AddCustomStreamDialog(
                     placeholder = { Text("e.g. My Favorite Radio") },
                     singleLine = true,
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = AccentCyan,
-                        focusedLabelColor = AccentCyan,
-                        cursorColor = AccentCyan
+                        focusedBorderColor = MochyCoral,
+                        focusedLabelColor = MochyCoral,
+                        cursorColor = MochyCoral
                     ),
+                    shape = RoundedCornerShape(14.dp),
                     modifier = Modifier.fillMaxWidth()
                 )
 
@@ -229,10 +255,11 @@ private fun AddCustomStreamDialog(
                     placeholder = { Text("https://example.com/stream.mp3") },
                     singleLine = true,
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = AccentCyan,
-                        focusedLabelColor = AccentCyan,
-                        cursorColor = AccentCyan
+                        focusedBorderColor = MochyCoral,
+                        focusedLabelColor = MochyCoral,
+                        cursorColor = MochyCoral
                     ),
+                    shape = RoundedCornerShape(14.dp),
                     modifier = Modifier.fillMaxWidth()
                 )
 
@@ -243,10 +270,11 @@ private fun AddCustomStreamDialog(
                     placeholder = { Text("e.g. Electronic, Jazz, News") },
                     singleLine = true,
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = AccentCyan,
-                        focusedLabelColor = AccentCyan,
-                        cursorColor = AccentCyan
+                        focusedBorderColor = MochyCoral,
+                        focusedLabelColor = MochyCoral,
+                        cursorColor = MochyCoral
                     ),
+                    shape = RoundedCornerShape(14.dp),
                     modifier = Modifier.fillMaxWidth()
                 )
 
@@ -267,15 +295,20 @@ private fun AddCustomStreamDialog(
                     }
                 },
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = AccentCyan,
-                    contentColor = DarkBackground
-                )
+                    containerColor = MochyCoral,
+                    contentColor = Color.White
+                ),
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier.sakugaSquash(squashAmount = 0.9f)
             ) {
                 Text("Add", fontWeight = FontWeight.Bold)
             }
         },
         dismissButton = {
-            OutlinedButton(onClick = onDismiss) {
+            OutlinedButton(
+                onClick = onDismiss,
+                shape = RoundedCornerShape(16.dp)
+            ) {
                 Text("Cancel", color = TextSecondary)
             }
         }

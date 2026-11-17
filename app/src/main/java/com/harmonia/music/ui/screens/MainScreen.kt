@@ -11,6 +11,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -51,6 +52,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -59,19 +61,26 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.media3.common.util.UnstableApi
 import com.harmonia.music.ui.components.FullPlayerSheet
+import com.harmonia.music.ui.components.LocalSakugaVfx
 import com.harmonia.music.ui.components.MiniPlayer
-import com.harmonia.music.ui.theme.AccentCyan
-import com.harmonia.music.ui.theme.AccentPurple
+import com.harmonia.music.ui.components.SakugaVfxOverlay
+import com.harmonia.music.ui.components.SakugaVfxState
+import com.harmonia.music.ui.components.sakugaSquash
 import com.harmonia.music.ui.theme.DarkBackground
 import com.harmonia.music.ui.theme.DarkSurfaceElevated
 import com.harmonia.music.ui.theme.DarkSurfaceVariant
-import com.harmonia.music.ui.theme.SuccessGreen
+import com.harmonia.music.ui.theme.MochyBackdropTop
+import com.harmonia.music.ui.theme.MochyCoral
+import com.harmonia.music.ui.theme.MochyCoralLight
+import com.harmonia.music.ui.theme.MochyPillBackground
 import com.harmonia.music.ui.theme.TextPrimary
 import com.harmonia.music.ui.theme.TextSecondary
 import com.harmonia.music.ui.viewmodel.MainViewModel
@@ -94,217 +103,259 @@ fun MainScreen(
 
     var isPlayerExpanded by remember { mutableStateOf(false) }
     var showAboutDialog by remember { mutableStateOf(false) }
+    val mainVfxState = remember { SakugaVfxState() }
     val context = LocalContext.current
 
-    Scaffold(
-        containerColor = DarkBackground,
-        topBar = {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(DarkBackground)
-            ) {
-                TopAppBar(
-                    title = {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                text = "Harmonia",
-                                style = MaterialTheme.typography.headlineMedium,
-                                fontWeight = FontWeight.ExtraBold,
-                                color = AccentCyan
+    CompositionLocalProvider(LocalSakugaVfx provides mainVfxState) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            Scaffold(
+                containerColor = DarkBackground,
+                topBar = {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(DarkBackground)
+                    ) {
+                        TopAppBar(
+                            title = {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(
+                                        text = "Harmonia",
+                                        style = MaterialTheme.typography.headlineMedium,
+                                        fontWeight = FontWeight.ExtraBold,
+                                        color = TextPrimary
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    // Mochy Coral Brand Badge
+                                    Box(
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .background(MochyCoral.copy(alpha = 0.2f))
+                                            .padding(horizontal = 7.dp, vertical = 2.dp)
+                                    ) {
+                                        Text(
+                                            text = "MOCHY • 120 FPS",
+                                            color = MochyCoral,
+                                            fontSize = 9.5.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                }
+                            },
+                            actions = {
+                                IconButton(
+                                    onClick = { showAboutDialog = true },
+                                    modifier = Modifier.sakugaSquash(squashAmount = 0.85f) {
+                                        showAboutDialog = true
+                                    }
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Info,
+                                        contentDescription = "About Developer",
+                                        tint = TextSecondary
+                                    )
+                                }
+                            },
+                            colors = TopAppBarDefaults.topAppBarColors(
+                                containerColor = DarkBackground,
+                                titleContentColor = TextPrimary
                             )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            // 120 FPS high refresh badge
-                            Box(
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(6.dp))
-                                    .background(SuccessGreen.copy(alpha = 0.18f))
-                                    .padding(horizontal = 6.dp, vertical = 2.dp)
-                            ) {
+                        )
+
+                        // Mochy-styled Pill Search Bar
+                        OutlinedTextField(
+                            value = searchQuery,
+                            onValueChange = { viewModel.updateSearchQuery(it) },
+                            placeholder = {
                                 Text(
-                                    text = "120 FPS",
-                                    color = SuccessGreen,
-                                    fontSize = 10.sp,
-                                    fontWeight = FontWeight.Bold
+                                    text = if (selectedTab == 1) "Search stations or genres…" else "Search tracks, artists…",
+                                    color = TextSecondary,
+                                    fontSize = 13.5.sp
                                 )
-                            }
-                        }
-                    },
-                    actions = {
-                        IconButton(onClick = { showAboutDialog = true }) {
-                            Icon(
-                                imageVector = Icons.Default.Info,
-                                contentDescription = "About Developer",
-                                tint = TextSecondary
+                            },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Default.Search,
+                                    contentDescription = "Search",
+                                    tint = MochyCoral
+                                )
+                            },
+                            trailingIcon = {
+                                if (searchQuery.isNotEmpty()) {
+                                    IconButton(onClick = { viewModel.updateSearchQuery("") }) {
+                                        Icon(
+                                            imageVector = Icons.Default.Clear,
+                                            contentDescription = "Clear search",
+                                            tint = TextSecondary
+                                        )
+                                    }
+                                }
+                            },
+                            shape = RoundedCornerShape(20.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = MochyCoral,
+                                unfocusedBorderColor = Color.White.copy(alpha = 0.1f),
+                                focusedContainerColor = MochyPillBackground,
+                                unfocusedContainerColor = MochyPillBackground,
+                                cursorColor = MochyCoral,
+                                focusedTextColor = TextPrimary,
+                                unfocusedTextColor = TextPrimary
+                            ),
+                            singleLine = true,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 4.dp)
+                        )
+                    }
+                },
+                bottomBar = {
+                    Column {
+                        // Docked Mochy Mini Player with Fluid Spring Physics
+                        AnimatedVisibility(
+                            visible = playbackState.currentTrack != null,
+                            enter = slideInVertically(
+                                animationSpec = spring(
+                                    dampingRatio = Spring.DampingRatioMediumBouncy,
+                                    stiffness = Spring.StiffnessMediumLow
+                                ),
+                                initialOffsetY = { it }
+                            ) + fadeIn(animationSpec = tween(200)),
+                            exit = slideOutVertically(
+                                animationSpec = spring(
+                                    dampingRatio = Spring.DampingRatioNoBouncy,
+                                    stiffness = Spring.StiffnessMedium
+                                ),
+                                targetOffsetY = { it }
+                            ) + fadeOut(animationSpec = tween(150))
+                        ) {
+                            MiniPlayer(
+                                playbackState = playbackState,
+                                onPlayPauseClick = {
+                                    mainVfxState.triggerRing(Offset(500f, 1800f), color = MochyCoral)
+                                    viewModel.playerController.togglePlayPause()
+                                },
+                                onSkipNextClick = {
+                                    mainVfxState.triggerSlash(Offset(700f, 1800f), color = MochyCoralLight)
+                                    viewModel.playerController.skipNext()
+                                },
+                                onExpandClick = { isPlayerExpanded = true }
                             )
                         }
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = DarkBackground,
-                        titleContentColor = AccentCyan
-                    )
-                )
 
-                // Search Bar
-                OutlinedTextField(
-                    value = searchQuery,
-                    onValueChange = { viewModel.updateSearchQuery(it) },
-                    placeholder = {
-                        Text(
-                            text = if (selectedTab == 1) "Search stations or genres…" else "Search tracks, artists…",
-                            color = TextSecondary,
-                            fontSize = 14.sp
-                        )
-                    },
-                    leadingIcon = {
-                        Icon(
-                            imageVector = Icons.Default.Search,
-                            contentDescription = "Search",
-                            tint = TextSecondary
-                        )
-                    },
-                    trailingIcon = {
-                        if (searchQuery.isNotEmpty()) {
-                            IconButton(onClick = { viewModel.updateSearchQuery("") }) {
-                                Icon(
-                                    imageVector = Icons.Default.Clear,
-                                    contentDescription = "Clear search",
-                                    tint = TextSecondary
+                        // Mochy Bottom Navigation Bar with Coral Highlights & Sakuga Bounce
+                        NavigationBar(
+                            containerColor = MochyBackdropTop,
+                            tonalElevation = 8.dp
+                        ) {
+                            NavigationBarItem(
+                                selected = selectedTab == 0,
+                                onClick = {
+                                    viewModel.selectTab(0)
+                                    mainVfxState.triggerMangaSfx("カチッ!", Offset(160f, 1900f), color = MochyCoral)
+                                },
+                                icon = {
+                                    Icon(
+                                        imageVector = Icons.Default.LibraryMusic,
+                                        contentDescription = "Local Music",
+                                        modifier = Modifier.sakugaSquash(squashAmount = 0.85f)
+                                    )
+                                },
+                                label = { Text("Local Music", fontWeight = FontWeight.SemiBold) },
+                                colors = NavigationBarItemDefaults.colors(
+                                    selectedIconColor = Color.White,
+                                    selectedTextColor = MochyCoral,
+                                    indicatorColor = MochyCoral,
+                                    unselectedIconColor = TextSecondary,
+                                    unselectedTextColor = TextSecondary
                                 )
-                            }
+                            )
+
+                            NavigationBarItem(
+                                selected = selectedTab == 1,
+                                onClick = {
+                                    viewModel.selectTab(1)
+                                    mainVfxState.triggerMangaSfx("カチッ!", Offset(400f, 1900f), color = MochyCoral)
+                                },
+                                icon = {
+                                    Icon(
+                                        imageVector = Icons.Default.Radio,
+                                        contentDescription = "Live Streams",
+                                        modifier = Modifier.sakugaSquash(squashAmount = 0.85f)
+                                    )
+                                },
+                                label = { Text("Live Streams", fontWeight = FontWeight.SemiBold) },
+                                colors = NavigationBarItemDefaults.colors(
+                                    selectedIconColor = Color.White,
+                                    selectedTextColor = MochyCoral,
+                                    indicatorColor = MochyCoral,
+                                    unselectedIconColor = TextSecondary,
+                                    unselectedTextColor = TextSecondary
+                                )
+                            )
+
+                            NavigationBarItem(
+                                selected = selectedTab == 2,
+                                onClick = {
+                                    viewModel.selectTab(2)
+                                    mainVfxState.triggerMangaSfx("カチッ!", Offset(650f, 1900f), color = MochyCoral)
+                                },
+                                icon = {
+                                    Icon(
+                                        imageVector = Icons.Default.Favorite,
+                                        contentDescription = "Favorites",
+                                        modifier = Modifier.sakugaSquash(squashAmount = 0.85f)
+                                    )
+                                },
+                                label = { Text("Favorites", fontWeight = FontWeight.SemiBold) },
+                                colors = NavigationBarItemDefaults.colors(
+                                    selectedIconColor = Color.White,
+                                    selectedTextColor = MochyCoral,
+                                    indicatorColor = MochyCoral,
+                                    unselectedIconColor = TextSecondary,
+                                    unselectedTextColor = TextSecondary
+                                )
+                            )
                         }
-                    },
-                    shape = RoundedCornerShape(16.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = AccentCyan,
-                        unfocusedBorderColor = DarkSurfaceElevated,
-                        focusedContainerColor = DarkSurfaceElevated,
-                        unfocusedContainerColor = DarkSurfaceElevated,
-                        cursorColor = AccentCyan
-                    ),
-                    singleLine = true,
+                    }
+                }
+            ) { innerPadding ->
+                Box(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 4.dp)
-                )
-            }
-        },
-        bottomBar = {
-            Column {
-                // Docked Mini Player with Fluid Spring Physics
-                AnimatedVisibility(
-                    visible = playbackState.currentTrack != null,
-                    enter = slideInVertically(
-                        animationSpec = spring(
-                            dampingRatio = Spring.DampingRatioMediumBouncy,
-                            stiffness = Spring.StiffnessMediumLow
-                        ),
-                        initialOffsetY = { it }
-                    ) + fadeIn(animationSpec = tween(200)),
-                    exit = slideOutVertically(
-                        animationSpec = spring(
-                            dampingRatio = Spring.DampingRatioNoBouncy,
-                            stiffness = Spring.StiffnessMedium
-                        ),
-                        targetOffsetY = { it }
-                    ) + fadeOut(animationSpec = tween(150))
+                        .fillMaxSize()
+                        .padding(innerPadding)
                 ) {
-                    MiniPlayer(
-                        playbackState = playbackState,
-                        onPlayPauseClick = { viewModel.playerController.togglePlayPause() },
-                        onSkipNextClick = { viewModel.playerController.skipNext() },
-                        onExpandClick = { isPlayerExpanded = true }
-                    )
-                }
-
-                // Bottom Navigation Bar
-                NavigationBar(
-                    containerColor = DarkBackground,
-                    tonalElevation = 8.dp
-                ) {
-                    NavigationBarItem(
-                        selected = selectedTab == 0,
-                        onClick = { viewModel.selectTab(0) },
-                        icon = {
-                            Icon(Icons.Default.LibraryMusic, contentDescription = "Local Music")
-                        },
-                        label = { Text("Local Music") },
-                        colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = DarkBackground,
-                            selectedTextColor = AccentCyan,
-                            indicatorColor = AccentCyan,
-                            unselectedIconColor = TextSecondary,
-                            unselectedTextColor = TextSecondary
+                    when (selectedTab) {
+                        0 -> LocalTracksScreen(
+                            tracks = localTracks,
+                            playbackState = playbackState,
+                            hasPermission = hasPermission,
+                            onRequestPermission = onRequestPermission,
+                            onTrackClick = { track, list -> viewModel.playTrack(track, list) },
+                            onShuffleAll = { list -> viewModel.shuffleAll(list) },
+                            onFavoriteToggle = { track -> viewModel.toggleFavorite(track) }
                         )
-                    )
-
-                    NavigationBarItem(
-                        selected = selectedTab == 1,
-                        onClick = { viewModel.selectTab(1) },
-                        icon = {
-                            Icon(Icons.Default.Radio, contentDescription = "Live Streams")
-                        },
-                        label = { Text("Live Streams") },
-                        colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = DarkBackground,
-                            selectedTextColor = AccentCyan,
-                            indicatorColor = AccentCyan,
-                            unselectedIconColor = TextSecondary,
-                            unselectedTextColor = TextSecondary
+                        1 -> OnlineStreamsScreen(
+                            streams = streams,
+                            playbackState = playbackState,
+                            selectedGenre = selectedGenre,
+                            onGenreSelect = { genre -> viewModel.selectGenre(genre) },
+                            onStreamClick = { stream -> viewModel.playSingleTrack(stream) },
+                            onFavoriteToggle = { stream -> viewModel.toggleFavorite(stream) },
+                            onAddCustomStream = { name, url, genre -> viewModel.addCustomStream(name, url, genre) }
                         )
-                    )
-
-                    NavigationBarItem(
-                        selected = selectedTab == 2,
-                        onClick = { viewModel.selectTab(2) },
-                        icon = {
-                            Icon(Icons.Default.Favorite, contentDescription = "Favorites")
-                        },
-                        label = { Text("Favorites") },
-                        colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = DarkBackground,
-                            selectedTextColor = AccentCyan,
-                            indicatorColor = AccentCyan,
-                            unselectedIconColor = TextSecondary,
-                            unselectedTextColor = TextSecondary
+                        2 -> FavoritesScreen(
+                            favorites = favorites,
+                            playbackState = playbackState,
+                            onTrackClick = { track, list -> viewModel.playTrack(track, list) },
+                            onShuffleFavorites = { list -> viewModel.shuffleAll(list) },
+                            onFavoriteToggle = { track -> viewModel.toggleFavorite(track) }
                         )
-                    )
+                    }
                 }
             }
-        }
-    ) { innerPadding ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-        ) {
-            when (selectedTab) {
-                0 -> LocalTracksScreen(
-                    tracks = localTracks,
-                    playbackState = playbackState,
-                    hasPermission = hasPermission,
-                    onRequestPermission = onRequestPermission,
-                    onTrackClick = { track, list -> viewModel.playTrack(track, list) },
-                    onShuffleAll = { list -> viewModel.shuffleAll(list) },
-                    onFavoriteToggle = { track -> viewModel.toggleFavorite(track) }
-                )
-                1 -> OnlineStreamsScreen(
-                    streams = streams,
-                    playbackState = playbackState,
-                    selectedGenre = selectedGenre,
-                    onGenreSelect = { genre -> viewModel.selectGenre(genre) },
-                    onStreamClick = { stream -> viewModel.playSingleTrack(stream) },
-                    onFavoriteToggle = { stream -> viewModel.toggleFavorite(stream) },
-                    onAddCustomStream = { name, url, genre -> viewModel.addCustomStream(name, url, genre) }
-                )
-                2 -> FavoritesScreen(
-                    favorites = favorites,
-                    playbackState = playbackState,
-                    onTrackClick = { track, list -> viewModel.playTrack(track, list) },
-                    onShuffleFavorites = { list -> viewModel.shuffleAll(list) },
-                    onFavoriteToggle = { track -> viewModel.toggleFavorite(track) }
-                )
-            }
+
+            // Global Sakuga Anime VFX Overlay Layer
+            SakugaVfxOverlay(vfxState = mainVfxState)
         }
     }
 
@@ -325,62 +376,67 @@ fun MainScreen(
         )
     }
 
-    // About & Developer Credits Dialog
+    // About & Developer Credits Dialog (Lead Developer: rmdmahfuz727-sudo)
     if (showAboutDialog) {
         AlertDialog(
             onDismissRequest = { showAboutDialog = false },
             containerColor = DarkSurfaceVariant,
+            shape = RoundedCornerShape(26.dp),
             title = {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(
                         modifier = Modifier
-                            .size(36.dp)
+                            .size(38.dp)
                             .clip(CircleShape)
-                            .background(AccentCyan.copy(alpha = 0.2f)),
+                            .background(MochyCoral.copy(alpha = 0.2f)),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = Icons.Default.Code,
                             contentDescription = null,
-                            tint = AccentCyan,
+                            tint = MochyCoral,
                             modifier = Modifier.size(20.dp)
                         )
                     }
                     Spacer(modifier = Modifier.width(10.dp))
-                    Text(text = "About Harmonia", color = TextPrimary)
+                    Text(text = "About Harmonia", color = TextPrimary, fontWeight = FontWeight.Bold)
                 }
             },
             text = {
                 Column(
                     modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     Text(
                         text = "Harmonia Music Player v1.0.0",
                         style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
                         color = TextPrimary
                     )
                     Text(
-                        text = "Built with Jetpack Compose, Material 3, and Media3 ExoPlayer with 120 FPS high refresh rate rendering.",
+                        text = "Crafted with Jetpack Compose & Material 3, inspired by Mochy-Music design aesthetics and Sakuga VFX anime spring physics.",
                         style = MaterialTheme.typography.bodyMedium,
                         color = TextSecondary
                     )
-                    Spacer(modifier = Modifier.height(4.dp))
                     Surface(
-                        color = DarkSurfaceElevated,
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier.fillMaxWidth()
+                        color = MochyPillBackground,
+                        shape = RoundedCornerShape(16.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .border(1.dp, MochyCoral.copy(alpha = 0.3f), RoundedCornerShape(16.dp))
                     ) {
-                        Column(modifier = Modifier.padding(12.dp)) {
+                        Column(modifier = Modifier.padding(14.dp)) {
                             Text(
-                                text = "Lead Developer:",
+                                text = "Lead Developer & Creator:",
                                 style = MaterialTheme.typography.labelSmall,
-                                color = AccentCyan
+                                color = MochyCoral,
+                                fontWeight = FontWeight.Bold
                             )
+                            Spacer(modifier = Modifier.height(2.dp))
                             Text(
                                 text = "rmdmahfuz727-sudo",
                                 style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
+                                fontWeight = FontWeight.ExtraBold,
                                 color = TextPrimary
                             )
                             Text(
@@ -402,15 +458,20 @@ fun MainScreen(
                         context.startActivity(browserIntent)
                     },
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = AccentCyan,
-                        contentColor = DarkBackground
-                    )
+                        containerColor = MochyCoral,
+                        contentColor = Color.White
+                    ),
+                    shape = RoundedCornerShape(16.dp),
+                    modifier = Modifier.sakugaSquash(squashAmount = 0.88f)
                 ) {
                     Text("Visit GitHub Profile", fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
-                OutlinedButton(onClick = { showAboutDialog = false }) {
+                OutlinedButton(
+                    onClick = { showAboutDialog = false },
+                    shape = RoundedCornerShape(16.dp)
+                ) {
                     Text("Close", color = TextSecondary)
                 }
             }

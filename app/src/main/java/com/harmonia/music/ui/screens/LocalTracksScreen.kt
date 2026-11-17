@@ -1,6 +1,7 @@
 package com.harmonia.music.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -24,7 +25,6 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.ElevatedButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -33,16 +33,18 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.harmonia.music.model.PlaybackState
 import com.harmonia.music.model.Track
 import com.harmonia.music.ui.components.TrackItem
-import com.harmonia.music.ui.theme.AccentCyan
-import com.harmonia.music.ui.theme.DarkBackground
-import com.harmonia.music.ui.theme.DarkSurfaceElevated
+import com.harmonia.music.ui.components.sakugaSquash
 import com.harmonia.music.ui.theme.DarkSurfaceVariant
+import com.harmonia.music.ui.theme.MochyCoral
+import com.harmonia.music.ui.theme.MochyPillBackground
 import com.harmonia.music.ui.theme.TextPrimary
 import com.harmonia.music.ui.theme.TextSecondary
 
@@ -72,7 +74,7 @@ fun LocalTracksScreen(
         contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 120.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        // Quick Action Bar
+        // Mochy Quick Action Bar
         item {
             Row(
                 modifier = Modifier
@@ -84,50 +86,68 @@ fun LocalTracksScreen(
                 Text(
                     text = "${tracks.size} songs",
                     style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
                     color = TextSecondary
                 )
 
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    ElevatedButton(
-                        onClick = { onShuffleAll(tracks) },
-                        colors = ButtonDefaults.elevatedButtonColors(
-                            containerColor = DarkSurfaceElevated,
-                            contentColor = AccentCyan
-                        ),
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    // Mochy Shuffle Capsule Pill with Sakuga Squash
+                    Surface(
+                        color = MochyPillBackground,
                         shape = RoundedCornerShape(20.dp),
-                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp)
+                        modifier = Modifier
+                            .sakugaSquash(squashAmount = 0.88f) {
+                                onShuffleAll(tracks)
+                            }
+                            .border(1.dp, Color.White.copy(alpha = 0.15f), RoundedCornerShape(20.dp))
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Shuffle,
-                            contentDescription = "Shuffle",
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = "Shuffle",
-                            fontWeight = FontWeight.SemiBold
-                        )
+                        Row(
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Shuffle,
+                                contentDescription = "Shuffle",
+                                tint = MochyCoral,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "Shuffle",
+                                color = TextPrimary,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
                     }
 
-                    ElevatedButton(
-                        onClick = { tracks.firstOrNull()?.let { onTrackClick(it, tracks) } },
-                        colors = ButtonDefaults.elevatedButtonColors(
-                            containerColor = AccentCyan,
-                            contentColor = DarkBackground
-                        ),
+                    // Mochy Play All Coral Pill with Sakuga Squash
+                    Surface(
+                        color = MochyCoral,
                         shape = RoundedCornerShape(20.dp),
-                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp)
+                        modifier = Modifier
+                            .sakugaSquash(squashAmount = 0.88f) {
+                                tracks.firstOrNull()?.let { onTrackClick(it, tracks) }
+                            }
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.PlayArrow,
-                            contentDescription = "Play All",
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = "Play All",
-                            fontWeight = FontWeight.SemiBold
-                        )
+                        Row(
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.PlayArrow,
+                                contentDescription = "Play All",
+                                tint = Color.White,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "Play All",
+                                color = Color.White,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
                     }
                 }
             }
@@ -170,13 +190,13 @@ private fun PermissionRequestView(
                     modifier = Modifier
                         .size(64.dp)
                         .clip(CircleShape)
-                        .background(AccentCyan.copy(alpha = 0.15f)),
+                        .background(MochyCoral.copy(alpha = 0.15f)),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = Icons.Default.FolderOpen,
                         contentDescription = "Storage",
-                        tint = AccentCyan,
+                        tint = MochyCoral,
                         modifier = Modifier.size(32.dp)
                     )
                 }
@@ -186,6 +206,7 @@ private fun PermissionRequestView(
                 Text(
                     text = "Audio Storage Permission",
                     style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
                     color = TextPrimary,
                     textAlign = TextAlign.Center
                 )
@@ -204,11 +225,13 @@ private fun PermissionRequestView(
                 Button(
                     onClick = onRequestPermission,
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = AccentCyan,
-                        contentColor = DarkBackground
+                        containerColor = MochyCoral,
+                        contentColor = Color.White
                     ),
-                    shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier.fillMaxWidth()
+                    shape = RoundedCornerShape(16.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .sakugaSquash(squashAmount = 0.92f) { onRequestPermission() }
                 ) {
                     Text(
                         text = "Grant Storage Access",
@@ -235,13 +258,14 @@ private fun EmptyTracksView(modifier: Modifier = Modifier) {
             Icon(
                 imageVector = Icons.Default.MusicNote,
                 contentDescription = null,
-                tint = TextSecondary,
+                tint = MochyCoral.copy(alpha = 0.6f),
                 modifier = Modifier.size(64.dp)
             )
             Spacer(modifier = Modifier.height(16.dp))
             Text(
                 text = "No Music Found",
                 style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
                 color = TextPrimary
             )
             Spacer(modifier = Modifier.height(6.dp))

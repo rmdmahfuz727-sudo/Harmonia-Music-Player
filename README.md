@@ -1,13 +1,15 @@
-# 🎵 Harmonia — Modern Android Music & Radio Player
+# 🎵 Harmonia — Mochy-Inspired 120 FPS Android Music & Radio Player with Sakuga Anime VFX
 
-[![Author](https://img.shields.io/badge/Developer-rmdmahfuz727--sudo-00E5FF?style=for-the-badge&logo=github)](https://github.com/rmdmahfuz727-sudo)
+[![Author](https://img.shields.io/badge/Developer-rmdmahfuz727--sudo-E85D75?style=for-the-badge&logo=github)](https://github.com/rmdmahfuz727-sudo)
 [![Platform](https://img.shields.io/badge/Platform-Android-3DDC84?style=for-the-badge&logo=android)](https://www.android.com/)
 [![Language](https://img.shields.io/badge/Kotlin-1.9.23-7F52FF?style=for-the-badge&logo=kotlin)](https://kotlinlang.org/)
 [![Jetpack Compose](https://img.shields.io/badge/UI-Jetpack%20Compose%20%26%20Material%203-4285F4?style=for-the-badge&logo=jetpackcompose)](https://developer.android.com/jetpack/compose)
+[![Mochy-Music](https://img.shields.io/badge/Design-Mochy--Music%20Aesthetic-E85D75?style=for-the-badge)](https://github.com/realidkroo/Mochy-Music)
+[![Sakuga VFX](https://img.shields.io/badge/Physics-Sakuga%20Anime%20VFX-FFD166?style=for-the-badge)](https://sakuga-vfx.vercel.app/gallery/)
 [![Media3](https://img.shields.io/badge/Audio-AndroidX%20Media3%20ExoPlayer-FF6F00?style=for-the-badge)](https://developer.android.com/media/media3)
 [![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](LICENSE)
 
-> A modern, sleek native Android hybrid music and live radio streaming player built with **Jetpack Compose**, **Material 3**, and **Android Jetpack Media3 (ExoPlayer)**.
+> A modern, fluid native Android music and live internet radio player built with **Jetpack Compose**, **Material 3**, and **Android Jetpack Media3 (ExoPlayer)**. Features design language inspired by **Mochy-Music** and interactive anime keyframed spring physics with Canvas-drawn effects inspired by **Sakuga VFX**.
 
 ---
 
@@ -19,23 +21,45 @@
 
 ---
 
-## 🌟 Highlights
+## 🌸 Mochy-Music Design Aesthetics
 
-- **Hybrid Audio Engine**: Play offline local audio library tracks (`MP3`, `FLAC`, `AAC`, `OGG`, `WAV`) and real-time live internet radio streams simultaneously.
+Harmonia adopts the signature visual styling of **Mochy-Music**:
+- **Ambient Drifting Backdrop**: Dark warm gradient backdrop (`#161519` ➔ `#3D2028` ➔ `#121114`) reflecting the mood of cover art.
+- **Mochy Coral & Pill Cluster**: Signature Coral (`#E85D75`) accents, rounded squircle artwork (12–32dp corner radii), and translucent capsule pills (`#992B2830`).
+- **Signature Wavy Seek Bar**: Animated harmonic audio wave path along active playback with a glowing white-and-coral nucleus thumb.
+- **Action Pills Row**: Horizontal interactive pills for Like / Dislike (100K counter), Music Haptics, Lyrics, and Spatial Audio FX.
+- **Capsule Transport Cluster**: Mochy flagship layout featuring Previous Capsule, central Coral Play/Pause FAB, and Next Capsule.
+- **Bluetooth Route Display**: Bottom audio output destination indicator (`CPH2745 • SpatialFX`).
+
+---
+
+## 💥 Sakuga Anime VFX & Spring Physics
+
+Inspired by [Sakuga VFX](https://sakuga-vfx.vercel.app/gallery/), controls react like keyframed anime animation cuts:
+- **Volume-Preserving Squash & Stretch**: Touching any control (buttons, cards, pills, mini player) squashes along the Y-axis while expanding proportionally along the X-axis (`scaleX * scaleY ≈ 1.0`).
+- **Snappy Spring Overshoot**: On release, controls snap past 1.0 on a bouncy spring before settling smoothly into resting state.
+- **Canvas-Drawn Anime Effects**:
+  - **Impact Starburst (`burst`)**: Sharp triangular anime shards blasting radially on Play/Pause hits.
+  - **Shockwave Ring (`ring`)**: Expanding shockwave circle that leaves by thinning out.
+  - **Crescent Slash (`slash`)**: Anime sword-blade slash trail on skipping tracks.
+  - **Kira Sparkles (`kira`)**: 4-pointed rotating anime glints on favorite hearts.
+  - **Manga SFX Typography (`sfx`)**: Bold stylized onomatopoeia popup lettering with ink outlines:
+    - **ドン！** (*DON!* — Heavy Impact) on Play FAB trigger.
+    - **カチッ！** (*KACHI!* — Mechanical Click) on pill and tab switches.
+    - **シュッ！** (*SHU!* — Swift Swish) on track skips and sheet swipes.
+    - **ポン！** (*PON!* — Pop) on like toggles.
+
+---
+
+## ⚡ 120 FPS High Refresh Rate Audio Engine
+
+- **RenderThread Hardware Acceleration**: All transforms use `Modifier.graphicsLayer` to execute animations on RenderThread without triggering Compose layout recompositions.
+- **Fluid Visualizer**: Canvas-drawn multi-harmonic sine visualizer running at full 120 FPS.
 - **Android Media3 Background Playback**:
-  - Implements `HarmoniaPlaybackService` (`MediaSessionService`) for background audio that continues uninterrupted when locked or minimized.
+  - `HarmoniaPlaybackService` (`MediaSessionService`) keeps audio playing when screen is locked or app is minimized.
   - System lock-screen controls, notification transport actions, and album art synchronization.
-  - Headphone disconnect safety (`handleAudioBecomingNoisy` auto-pauses when headphones/Bluetooth are disconnected).
-  - Audio focus management (auto-ducks/pauses on incoming calls and navigation cues).
+  - Automatic audio ducking and `AUDIO_BECOMING_NOISY` listener (auto-pauses when headphones/Bluetooth disconnect).
   - CPU WakeLock (`WAKE_MODE_NETWORK`) prevents stuttering during stream playback when screen turns off.
-- **Modern Jetpack Compose UI**:
-  - **Obsidian Dark Aesthetic**: Deep obsidian backgrounds accented with vibrant neon cyan, deep purple, and glowing pink.
-  - **Docked Mini Player**: Floating above the bottom navigation bar with an animated rotating vinyl disc, marquee song title, play/pause controls, and slim progress bar.
-  - **Full-Screen Player Sheet**: Expansive player featuring glowing album art with dynamic shadows, interactive scrub slider, live broadcast badge for streams, shuffle, and cycle repeat modes (`OFF` ➔ `ALL` ➔ `ONE`).
-  - **Curated Radio Directory**: Pre-configured high-definition streams (Groove Salad, DEF CON Radio, Drone Zone, Indie Pop Rocks, etc.) + custom stream URL creator.
-  - **Smart MediaStore Scanner**: Queries Android MediaStore for local audio files, tags, and album art, automatically filtering out system ringtones and notification sounds.
-  - **Favorites Manager**: Star any local song or live stream for 1-tap playback and instant shuffle.
-  - **In-App Developer Credits**: Dedicated About modal linking directly to **[@rmdmahfuz727-sudo](https://github.com/rmdmahfuz727-sudo)**.
 
 ---
 
@@ -62,7 +86,7 @@ HarmoniaPlayer/
         │   └── xml/                # Backup & data extraction rules
         └── java/com/harmonia/music/
             ├── HarmoniaApplication.kt       # Application class
-            ├── MainActivity.kt              # Entry Activity with edge-to-edge & permission launcher
+            ├── MainActivity.kt              # Entry Activity with 120 FPS display mode
             ├── model/
             │   ├── Track.kt                 # Track model & Media3 MediaItem mapper
             │   ├── PlaybackState.kt         # Reactive playback state & repeat modes
@@ -74,17 +98,20 @@ HarmoniaPlayer/
             ├── service/
             │   └── HarmoniaPlaybackService.kt # MediaSessionService hosting ExoPlayer
             └── ui/
-                ├── theme/                   # Color, Typography, and Theme definitions
+                ├── theme/                   # Mochy & Sakuga Color, Typography, and Theme
                 ├── components/
-                │   ├── TrackItem.kt         # Local track row with art & playing wave
-                │   ├── StreamItem.kt        # Radio station card with pulsating LIVE tag
-                │   ├── MiniPlayer.kt        # Docked bottom bar with rotating disc
-                │   └── FullPlayerSheet.kt   # Expandable full-screen playback modal
+                │   ├── SakugaVfx.kt         # Sakuga Anime Physics & Canvas VFX Layer
+                │   ├── MochyWaveSeekBar.kt  # Mochy glowing fluid wave seek bar
+                │   ├── FluidVisualizer.kt   # 120 FPS Canvas audio visualizer
+                │   ├── TrackItem.kt         # Mochy track item with Sakuga squash
+                │   ├── StreamItem.kt        # Mochy live station card with pulsing badge
+                │   ├── MiniPlayer.kt        # Mochy frosted capsule docked mini bar
+                │   └── FullPlayerSheet.kt   # Mochy full-screen player with Sakuga FX
                 ├── screens/
-                │   ├── LocalTracksScreen.kt # Local library with shuffle & permissions prompt
+                │   ├── LocalTracksScreen.kt # Local library with Mochy action capsules
                 │   ├── OnlineStreamsScreen.kt # Live radio directory & custom stream dialog
                 │   ├── FavoritesScreen.kt   # Pinned tracks & streams
-                │   └── MainScreen.kt        # Scaffold host & bottom navigation
+                │   └── MainScreen.kt        # Scaffold host, Mochy search & bottom navigation
                 └── viewmodel/
                     ├── MusicPlayerController.kt # MediaController bridge to background service
                     └── MainViewModel.kt     # State holder for search, tabs, & lists
@@ -109,17 +136,6 @@ cd HarmoniaPlayer
 ```
 The output APK will be generated at:
 `app/build/outputs/apk/debug/app-debug.apk`
-
----
-
-## 🔒 Permissions Used
-
-- `READ_MEDIA_AUDIO`: Android 13+ (API 33+) permission to read local audio files.
-- `READ_EXTERNAL_STORAGE`: Android 12 and below fallback for audio library access.
-- `POST_NOTIFICATIONS`: Android 13+ permission for system media notification controls.
-- `FOREGROUND_SERVICE` & `FOREGROUND_SERVICE_MEDIA_PLAYBACK`: Required on Android 14+ to run playback in the background without termination.
-- `INTERNET`: For streaming live audio stations.
-- `WAKE_LOCK`: Ensures ExoPlayer streaming does not sleep when screen turns off.
 
 ---
 

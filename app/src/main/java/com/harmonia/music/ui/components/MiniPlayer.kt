@@ -1,19 +1,9 @@
 package com.harmonia.music.ui.components
 
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -23,7 +13,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Pause
@@ -37,26 +26,33 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.harmonia.music.R
 import com.harmonia.music.model.PlaybackState
-import com.harmonia.music.ui.theme.AccentCyan
 import com.harmonia.music.ui.theme.DarkSurfaceElevated
-import com.harmonia.music.ui.theme.DarkSurfaceVariant
+import com.harmonia.music.ui.theme.MochyCoral
+import com.harmonia.music.ui.theme.MochyCoralGlow
+import com.harmonia.music.ui.theme.MochyPillBackground
+import com.harmonia.music.ui.theme.MochySubtleText
 import com.harmonia.music.ui.theme.TextPrimary
 import com.harmonia.music.ui.theme.TextSecondary
 
+/**
+ * Mochy-styled Frosted Capsule Mini Player with Sakuga Spring Squash Physics.
+ */
 @Composable
 fun MiniPlayer(
     playbackState: PlaybackState,
@@ -67,63 +63,35 @@ fun MiniPlayer(
 ) {
     val track = playbackState.currentTrack ?: return
     val context = LocalContext.current
-
-    // 120 FPS continuous rotation for vinyl disc using graphicsLayer
-    val infiniteTransition = rememberInfiniteTransition(label = "disc_spin")
-    val rotation by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 360f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(10000, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "rotation"
-    )
-
-    // Fluid spring bounce physics on touch press
-    val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
-    val pressScale by animateFloatAsState(
-        targetValue = if (isPressed) 0.965f else 1f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessLow
-        ),
-        label = "press_scale"
-    )
+    val vfx = LocalSakugaVfx.current
 
     Surface(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 6.dp)
-            .graphicsLayer {
-                scaleX = pressScale
-                scaleY = pressScale
+            .padding(horizontal = 14.dp, vertical = 6.dp)
+            .shadow(16.dp, RoundedCornerShape(22.dp), spotColor = MochyCoralGlow)
+            .sakugaSquash(squashAmount = 0.96f) {
+                onExpandClick()
             }
-            .clip(RoundedCornerShape(18.dp))
-            .clickable(
-                interactionSource = interactionSource,
-                indication = null
-            ) { onExpandClick() }
-            .border(1.dp, AccentCyan.copy(alpha = 0.35f), RoundedCornerShape(18.dp)),
-        color = DarkSurfaceElevated,
-        shape = RoundedCornerShape(18.dp),
-        shadowElevation = 8.dp
+            .clip(RoundedCornerShape(22.dp))
+            .border(1.dp, MochyCoral.copy(alpha = 0.35f), RoundedCornerShape(22.dp)),
+        color = MochyPillBackground,
+        shape = RoundedCornerShape(22.dp)
     ) {
         Column {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                    .padding(horizontal = 12.dp, vertical = 9.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Vinyl disc thumbnail with 120 FPS graphicsLayer rotation
+                // Mochy Squircle Artwork Tile
                 Box(
                     modifier = Modifier
                         .size(46.dp)
-                        .clip(CircleShape)
-                        .background(DarkSurfaceVariant)
-                        .border(1.5.dp, AccentCyan, CircleShape),
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(DarkSurfaceElevated)
+                        .border(1.dp, Color.White.copy(alpha = 0.15f), RoundedCornerShape(12.dp)),
                     contentAlignment = Alignment.Center
                 ) {
                     AsyncImage(
@@ -135,40 +103,28 @@ fun MiniPlayer(
                             .build(),
                         contentDescription = track.title,
                         contentScale = ContentScale.Crop,
-                        modifier = Modifier
-                            .matchParentSize()
-                            .graphicsLayer {
-                                rotationZ = if (playbackState.isPlaying) rotation else 0f
-                            }
-                    )
-
-                    // Small center hole for vinyl effect
-                    Box(
-                        modifier = Modifier
-                            .size(10.dp)
-                            .clip(CircleShape)
-                            .background(DarkSurfaceElevated)
-                            .border(1.dp, AccentCyan, CircleShape)
+                        modifier = Modifier.matchParentSize()
                     )
                 }
 
                 Spacer(modifier = Modifier.width(12.dp))
 
-                // Track details
+                // Track Title & Artist
                 Column(
                     modifier = Modifier.weight(1f)
                 ) {
                     Text(
                         text = track.title,
                         style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
                         color = TextPrimary,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
                     Text(
-                        text = if (track.isStream) "LIVE STREAM • ${track.artist}" else track.artist,
+                        text = if (track.isStream) "LIVE • ${track.artist}" else track.artist,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = TextSecondary,
+                        color = if (track.isStream) MochySubtleText else TextSecondary,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -182,53 +138,69 @@ fun MiniPlayer(
                         height = 20.dp,
                         modifier = Modifier.width(36.dp)
                     )
-                    Spacer(modifier = Modifier.width(6.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
                 }
 
-                // Play / Pause button
-                IconButton(
-                    onClick = onPlayPauseClick,
-                    modifier = Modifier.size(42.dp)
+                // Mochy Pill Play/Pause Button with Sakuga Squash
+                Surface(
+                    color = MochyCoral,
+                    shape = RoundedCornerShape(16.dp),
+                    modifier = Modifier
+                        .size(width = 44.dp, height = 40.dp)
+                        .sakugaSquash(squashAmount = 0.85f) {
+                            onPlayPauseClick()
+                        }
                 ) {
-                    if (playbackState.isBuffering) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(22.dp),
-                            color = AccentCyan,
-                            strokeWidth = 2.dp
-                        )
-                    } else {
-                        Icon(
-                            imageVector = if (playbackState.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                            contentDescription = if (playbackState.isPlaying) "Pause" else "Play",
-                            tint = AccentCyan,
-                            modifier = Modifier.size(28.dp)
-                        )
+                    Box(contentAlignment = Alignment.Center) {
+                        if (playbackState.isBuffering) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(20.dp),
+                                color = Color.White,
+                                strokeWidth = 2.dp
+                            )
+                        } else {
+                            Icon(
+                                imageVector = if (playbackState.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                                contentDescription = if (playbackState.isPlaying) "Pause" else "Play",
+                                tint = Color.White,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
                     }
                 }
 
-                // Skip Next button
-                IconButton(
-                    onClick = onSkipNextClick,
-                    modifier = Modifier.size(36.dp)
+                Spacer(modifier = Modifier.width(8.dp))
+
+                // Skip Next button with Sakuga Squash
+                Surface(
+                    color = Color.White.copy(alpha = 0.08f),
+                    shape = RoundedCornerShape(16.dp),
+                    modifier = Modifier
+                        .size(width = 38.dp, height = 40.dp)
+                        .sakugaSquash(squashAmount = 0.85f) {
+                            onSkipNextClick()
+                        }
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.SkipNext,
-                        contentDescription = "Next Track",
-                        tint = TextPrimary,
-                        modifier = Modifier.size(24.dp)
-                    )
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = Icons.Default.SkipNext,
+                            contentDescription = "Next Track",
+                            tint = Color.White,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
                 }
             }
 
-            // Bottom progress bar with lambda-based progress to avoid recomposition
+            // Bottom Mochy Coral Progress Indicator
             if (!track.isStream && playbackState.durationMs > 0) {
                 LinearProgressIndicator(
                     progress = { playbackState.progressFraction },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(2.5.dp),
-                    color = AccentCyan,
-                    trackColor = DarkSurfaceVariant
+                    color = MochyCoral,
+                    trackColor = Color.White.copy(alpha = 0.1f)
                 )
             }
         }

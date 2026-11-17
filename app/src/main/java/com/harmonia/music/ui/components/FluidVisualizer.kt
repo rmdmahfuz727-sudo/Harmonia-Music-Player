@@ -5,7 +5,6 @@ import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -21,13 +20,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.harmonia.music.ui.theme.AccentCyan
-import com.harmonia.music.ui.theme.AccentPurple
+import com.harmonia.music.ui.theme.MochyCoral
+import com.harmonia.music.ui.theme.MochyCoralLight
 import kotlin.math.sin
 
 /**
- * High-performance 120 FPS Canvas Audio Visualizer.
- * Bypasses Compose recomposition using graphicsLayer and direct Canvas drawing.
+ * High-performance 120 FPS Mochy-Fluid Audio Visualizer.
+ * Canvas drawing with RenderThread caching and Mochy coral wave palette.
  */
 @Composable
 fun FluidVisualizer(
@@ -35,8 +34,8 @@ fun FluidVisualizer(
     modifier: Modifier = Modifier,
     barCount: Int = 24,
     height: Dp = 48.dp,
-    barColorStart: Color = AccentCyan,
-    barColorEnd: Color = AccentPurple
+    barColorStart: Color = MochyCoral,
+    barColorEnd: Color = MochyCoralLight
 ) {
     val transition = rememberInfiniteTransition(label = "fluid_visualizer_phase")
     val phase by transition.animateFloat(
@@ -69,8 +68,6 @@ fun FluidVisualizer(
         )
 
         for (i in 0 until barCount) {
-            val normalizedX = i.toFloat() / barCount
-
             // Multi-frequency harmonic wave for realistic audio visualizer response
             val wave1 = sin(phase + i * 0.45f)
             val wave2 = sin(phase * 1.6f + i * 0.8f)
